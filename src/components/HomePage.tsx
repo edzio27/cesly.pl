@@ -9,6 +9,8 @@ type HomePageProps = {
 
 type Filters = {
   vehicleType: string;
+  brand: string;
+  model: string;
   minMonthlyPayment: string;
   maxMonthlyPayment: string;
   minTransferFee: string;
@@ -22,6 +24,8 @@ export function HomePage({ onViewListing }: HomePageProps) {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     vehicleType: '',
+    brand: '',
+    model: '',
     minMonthlyPayment: '',
     maxMonthlyPayment: '',
     minTransferFee: '',
@@ -41,6 +45,14 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
       if (filters.vehicleType) {
         query = query.eq('vehicle_type', filters.vehicleType);
+      }
+
+      if (filters.brand) {
+        query = query.ilike('brand', `%${filters.brand}%`);
+      }
+
+      if (filters.model) {
+        query = query.ilike('model', `%${filters.model}%`);
       }
 
       if (filters.minMonthlyPayment) {
@@ -65,7 +77,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
       switch (filters.sortBy) {
         case 'newest':
-          query = query.order('created_at', { ascending: false });
+          query = query.order('updated_at', { ascending: false });
           break;
         case 'oldest':
           query = query.order('created_at', { ascending: true });
@@ -100,46 +112,40 @@ export function HomePage({ onViewListing }: HomePageProps) {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-300/40 rounded-full blur-3xl"></div>
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-amber-300/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-orange-300/20 rounded-full blur-3xl"></div>
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 right-1/4 w-96 h-96 bg-orange-500/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8 text-center">
-          <div className="inline-block mb-4 relative">
-            <h1 className="text-6xl md:text-7xl font-black mb-2 bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 bg-clip-text text-transparent"
-                style={{
-                  filter: 'drop-shadow(0 2px 8px rgba(217, 119, 6, 0.3))',
-                  letterSpacing: '-0.02em'
-                }}>
-              Cesly.pl
-            </h1>
-            <div className="absolute -bottom-0.5 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent rounded-full opacity-70"></div>
+          <div className="inline-block mb-4">
+            <img
+              src="/cesly_logo_transparent_clean.png"
+              alt="Cesly.pl"
+              className="h-32 md:h-40 mx-auto"
+            />
           </div>
           <div className="space-y-1">
-            <p className="text-xl md:text-2xl font-bold text-amber-900">
-              Marketplace Cesji Pojazdów
-            </p>
-            <p className="text-sm text-amber-700/80 max-w-2xl mx-auto">
+            <p className="text-sm text-gray-300 max-w-2xl mx-auto">
               Znajdź najlepsze oferty cesji leasingowych samochodów, motocykli i łodzi
             </p>
           </div>
         </div>
 
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg mb-8 border border-amber-200/50">
+      <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-xl mb-8 border border-slate-700/50">
         <div className="px-6 py-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
                 Typ pojazdu
               </label>
               <select
                 value={filters.vehicleType}
                 onChange={(e) => handleFilterChange('vehicleType', e.target.value)}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100"
               >
                 <option value="">Wszystkie</option>
                 <option value="samochód">Samochód</option>
@@ -150,7 +156,35 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
+                Marka
+              </label>
+              <input
+                type="text"
+                value={filters.brand}
+                onChange={(e) => handleFilterChange('brand', e.target.value)}
+                placeholder="np. BMW, Audi..."
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
+                Model
+              </label>
+              <input
+                type="text"
+                value={filters.model}
+                onChange={(e) => handleFilterChange('model', e.target.value)}
+                placeholder="np. X5, A4..."
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
                 Rata miesięczna (min)
               </label>
               <input
@@ -158,12 +192,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.minMonthlyPayment}
                 onChange={(e) => handleFilterChange('minMonthlyPayment', e.target.value)}
                 placeholder="Od"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900 placeholder-gray-400"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
                 Rata miesięczna (max)
               </label>
               <input
@@ -171,18 +205,31 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.maxMonthlyPayment}
                 onChange={(e) => handleFilterChange('maxMonthlyPayment', e.target.value)}
                 placeholder="Do"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900 placeholder-gray-400"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
+                Max. pozostałe raty
+              </label>
+              <input
+                type="number"
+                value={filters.maxRemainingInstallments}
+                onChange={(e) => handleFilterChange('maxRemainingInstallments', e.target.value)}
+                placeholder="Bez limitu"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
                 Sortowanie
               </label>
               <select
                 value={filters.sortBy}
                 onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100"
               >
                 <option value="newest">Najnowsze</option>
                 <option value="oldest">Najstarsze</option>
@@ -193,9 +240,9 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-amber-200/50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
                 Min. odstępne (zł)
               </label>
               <input
@@ -203,12 +250,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.minTransferFee}
                 onChange={(e) => handleFilterChange('minTransferFee', e.target.value)}
                 placeholder="0"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900 placeholder-gray-400"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
+              <label className="block text-xs font-semibold text-gray-200 mb-2">
                 Max. odstępne (zł)
               </label>
               <input
@@ -216,20 +263,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.maxTransferFee}
                 onChange={(e) => handleFilterChange('maxTransferFee', e.target.value)}
                 placeholder="Bez limitu"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900 placeholder-gray-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-2">
-                Max. pozostałe raty
-              </label>
-              <input
-                type="number"
-                value={filters.maxRemainingInstallments}
-                onChange={(e) => handleFilterChange('maxRemainingInstallments', e.target.value)}
-                placeholder="Bez limitu"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-gray-900 placeholder-gray-400"
+                className="w-full px-3 py-2.5 text-sm bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-100 placeholder-gray-400"
               />
             </div>
           </div>
@@ -238,12 +272,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
       {loading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
-          <p className="mt-4 text-amber-700">Ładowanie ofert...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+          <p className="mt-4 text-gray-300">Ładowanie ofert...</p>
         </div>
       ) : listings.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-amber-700 text-lg">Brak ofert spełniających kryteria</p>
+          <p className="text-gray-300 text-lg">Brak ofert spełniających kryteria</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

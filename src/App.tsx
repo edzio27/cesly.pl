@@ -4,8 +4,9 @@ import { HomePage } from './components/HomePage';
 import { ListingDetailPage } from './components/ListingDetailPage';
 import { AddListingPage } from './components/AddListingPage';
 import { ProfilePage } from './components/ProfilePage';
+import AdminScrapingPage from './components/AdminScrapingPage';
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -48,6 +49,8 @@ function App() {
       )}
 
       {currentPage === 'profile' && <ProfilePage onViewListing={handleViewListing} />}
+
+      {currentPage === 'admin-scraping' && <AdminScrapingPage />}
     </div>
   );
 }

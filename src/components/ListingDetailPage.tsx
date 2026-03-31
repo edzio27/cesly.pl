@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit, Share2, Check } from 'lucide-react';
+import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit, Share2, Check, X } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -15,6 +15,8 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -24,6 +26,45 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
       addRecentView();
     }
   }, [listingId, user]);
+
+  useEffect(() => {
+    if (listing) {
+      const image = listing.images && listing.images.length > 0
+        ? listing.images[0]
+        : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200';
+
+      const price = listing.price_type === 'monthly'
+        ? `${listing.price} zł/mies`
+        : `${listing.price} zł`;
+
+      const description = `${listing.brand} ${listing.model} ${listing.year} - ${price}. ${listing.description.substring(0, 150)}...`;
+
+      document.title = `${listing.title} - Cesly`;
+
+      updateMetaTag('name', 'description', description);
+      updateMetaTag('property', 'og:title', listing.title);
+      updateMetaTag('property', 'og:description', description);
+      updateMetaTag('property', 'og:image', image);
+      updateMetaTag('property', 'og:url', `${window.location.origin}/listing/${listingId}`);
+      updateMetaTag('name', 'twitter:title', listing.title);
+      updateMetaTag('name', 'twitter:description', description);
+      updateMetaTag('name', 'twitter:image', image);
+    }
+
+    return () => {
+      document.title = 'Cesly - Przejęcia leasingu i wynajem samochodów';
+    };
+  }, [listing, listingId]);
+
+  const updateMetaTag = (attribute: string, key: string, content: string) => {
+    let element = document.querySelector(`meta[${attribute}="${key}"]`);
+    if (!element) {
+      element = document.createElement('meta');
+      element.setAttribute(attribute, key);
+      document.head.appendChild(element);
+    }
+    element.setAttribute('content', content);
+  };
 
   const fetchListing = async () => {
     try {
@@ -161,6 +202,31 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
     }
   };
 
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const nextLightboxImage = () => {
+    if (!listing) return;
+    const images = listing.images && listing.images.length > 0
+      ? listing.images
+      : ['https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200'];
+    setLightboxIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevLightboxImage = () => {
+    if (!listing) return;
+    const images = listing.images && listing.images.length > 0
+      ? listing.images
+      : ['https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200'];
+    setLightboxIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -182,7 +248,10 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
           <div>
-            <div className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4">
+            <div
+              className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4 cursor-zoom-in"
+              onClick={() => openLightbox(currentImageIndex)}
+            >
               <img
                 src={images[currentImageIndex]}
                 alt={listing.title}
@@ -192,13 +261,19 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
               {images.length > 1 && (
                 <>
                   <button
-                    onClick={prevImage}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      prevImage();
+                    }}
                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
                   >
                     <ChevronLeft size={24} />
                   </button>
                   <button
-                    onClick={nextImage}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      nextImage();
+                    }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
                   >
                     <ChevronRight size={24} />
@@ -212,8 +287,8 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
             </div>
 
             {images.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
-                {images.slice(0, 5).map((img, idx) => (
+              <div className="grid grid-cols-6 gap-2">
+                {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentImageIndex(idx)}
@@ -323,6 +398,53 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
         </div>
         </div>
       </div>
+
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition"
+          >
+            <X size={32} />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              prevLightboxImage();
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition"
+          >
+            <ChevronLeft size={48} />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              nextLightboxImage();
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition"
+          >
+            <ChevronRight size={48} />
+          </button>
+
+          <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center p-4">
+            <img
+              src={images[lightboxIndex]}
+              alt={listing.title}
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black bg-opacity-75 text-white px-4 py-2 rounded-full">
+            {lightboxIndex + 1} / {images.length}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

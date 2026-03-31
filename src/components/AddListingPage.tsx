@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, X, ImagePlus } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { carBrands, carModels } from '../data/carData';
 import { uploadImage, validateImageFile } from '../utils/imageUpload';
@@ -8,22 +8,26 @@ import { uploadImage, validateImageFile } from '../utils/imageUpload';
 type AddListingPageProps = {
   onBack: () => void;
   onSuccess: () => void;
+  editingListing?: Listing | null;
 };
 
 type ImageItem = {
-  type: 'url' | 'file';
+  type: 'url' | 'uploaded';
   value: string;
-  file?: File;
   preview?: string;
+  uploading?: boolean;
+  progress?: number;
+  error?: string;
 };
 
-export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
+export function AddListingPage({ onBack, onSuccess, editingListing }: AddListingPageProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [images, setImages] = useState<ImageItem[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -40,6 +44,30 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
     totalInstallments: '',
     priceType: 'brutto',
   });
+
+  useEffect(() => {
+    if (editingListing) {
+      setFormData({
+        title: editingListing.title,
+        description: editingListing.description || '',
+        vehicleType: editingListing.vehicle_type,
+        brand: editingListing.brand,
+        model: editingListing.model,
+        year: editingListing.year,
+        mileage: editingListing.mileage?.toString() || '',
+        monthlyPayment: editingListing.monthly_payment?.toString() || '',
+        buyoutPrice: editingListing.buyout_price?.toString() || '',
+        transferFee: editingListing.transfer_fee?.toString() || '',
+        remainingInstallments: editingListing.remaining_installments?.toString() || '',
+        totalInstallments: editingListing.total_installments?.toString() || '',
+        priceType: editingListing.price_type || 'brutto',
+      });
+
+      if (editingListing.images && editingListing.images.length > 0) {
+        setImages(editingListing.images.map(url => ({ type: 'uploaded', value: url })));
+      }
+    }
+  }, [editingListing]);
 
   if (!user) {
     return (
@@ -60,7 +88,11 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
 
   const availableModels = formData.brand ? carModels[formData.brand] || [] : [];
 
-  const processFiles = (files: FileList | File[]) => {
+  const createImagePreview = (file: File): string => {
+    return URL.createObjectURL(file);
+  };
+
+  const processFiles = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
 
     for (const file of fileArray) {
@@ -70,11 +102,44 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
         continue;
       }
 
-      const preview = URL.createObjectURL(file);
+      if (!user) {
+        setError('Musisz być zalogowany, aby przesyłać zdjęcia');
+        return;
+      }
+
+      const tempId = Math.random().toString(36);
+      const preview = createImagePreview(file);
+
       setImages((prev) => [
         ...prev,
-        { type: 'file', value: file.name, file, preview }
+        { type: 'uploaded', value: tempId, preview, uploading: true, progress: 0 }
       ]);
+
+      try {
+        const uploadedUrl = await uploadImage(file, user.id);
+
+        setImages((prev) =>
+          prev.map((img) => {
+            if (img.value === tempId) {
+              if (img.preview && img.preview.startsWith('blob:')) {
+                URL.revokeObjectURL(img.preview);
+              }
+              return { type: 'uploaded', value: uploadedUrl, uploading: false, progress: 100 };
+            }
+            return img;
+          })
+        );
+      } catch (err: any) {
+        const errorMessage = err.message || 'Błąd przesyłania';
+        setImages((prev) =>
+          prev.map((img) =>
+            img.value === tempId
+              ? { ...img, uploading: false, error: errorMessage }
+              : img
+          )
+        );
+        setError(errorMessage);
+      }
     }
   };
 
@@ -124,28 +189,46 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
     });
   };
 
+  const handleImageDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleImageDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    setImages((prev) => {
+      const newImages = [...prev];
+      const draggedItem = newImages[draggedIndex];
+      newImages.splice(draggedIndex, 1);
+      newImages.splice(index, 0, draggedItem);
+      setDraggedIndex(index);
+      return newImages;
+    });
+  };
+
+  const handleImageDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setUploadingImages(true);
 
     try {
-      const finalImageUrls: string[] = [];
-
-      for (const image of images) {
-        if (image.type === 'url') {
-          finalImageUrls.push(image.value);
-        } else if (image.type === 'file' && image.file && user) {
-          const uploadedUrl = await uploadImage(image.file, user.id);
-          finalImageUrls.push(uploadedUrl);
-        }
+      const hasUploadingImages = images.some((img) => img.uploading);
+      if (hasUploadingImages) {
+        setError('Poczekaj na zakończenie przesyłania wszystkich zdjęć');
+        setLoading(false);
+        return;
       }
 
-      setUploadingImages(false);
+      const finalImageUrls = images
+        .filter((img) => !img.error)
+        .map((img) => img.value);
 
-      const { error: insertError } = await supabase.from('listings').insert({
-        user_id: user.id,
+      const listingData = {
         title: formData.title,
         description: formData.description,
         vehicle_type: formData.vehicleType,
@@ -160,10 +243,26 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
         total_installments: parseInt(formData.totalInstallments),
         price_type: formData.priceType,
         images: finalImageUrls,
-        is_promoted: false,
-      });
+      };
 
-      if (insertError) throw insertError;
+      if (editingListing) {
+        const { error: updateError } = await supabase
+          .from('listings')
+          .update(listingData)
+          .eq('id', editingListing.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('listings')
+          .insert({
+            ...listingData,
+            user_id: user.id,
+            is_promoted: false,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       images.forEach((img) => {
         if (img.preview) {
@@ -173,25 +272,27 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
 
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Wystąpił błąd podczas dodawania ogłoszenia');
+      setError(err.message || `Wystąpił błąd podczas ${editingListing ? 'aktualizacji' : 'dodawania'} ogłoszenia`);
     } finally {
       setLoading(false);
-      setUploadingImages(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <button
-        onClick={onBack}
-        className="flex items-center text-blue-600 hover:text-blue-700 mb-6"
-      >
-        <ArrowLeft size={20} className="mr-2" />
-        Powrót
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <button
+          onClick={onBack}
+          className="flex items-center text-blue-600 hover:text-blue-700 mb-6"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Powrót
+        </button>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Dodaj nowe ogłoszenie</h1>
+        <div className="bg-white rounded-lg shadow-md p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          {editingListing ? 'Edytuj ogłoszenie' : 'Dodaj nowe ogłoszenie'}
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -485,46 +586,75 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
                 lub kliknij poniżej, aby wybrać pliki
               </p>
               <p className="text-xs text-gray-400">
-                Obsługiwane formaty: JPG, PNG, WEBP, HEIC, BMP, TIFF (max 20 MB)
+                Obsługiwane formaty: JPG, PNG, WEBP, BMP, TIFF, GIF (max 20 MB)
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Zdjęcia zostaną automatycznie skompresowane do 1 MB
+              </p>
+              <p className="text-xs text-orange-600 mt-1 font-medium">
+                HEIC nie jest obsługiwany - przekonwertuj do JPG
               </p>
             </div>
 
             {images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 {images.map((image, index) => (
-                  <div key={index} className="relative group">
+                  <div
+                    key={index}
+                    className="relative group cursor-move"
+                    draggable={!image.uploading}
+                    onDragStart={() => handleImageDragStart(index)}
+                    onDragOver={(e) => handleImageDragOver(e, index)}
+                    onDragEnd={handleImageDragEnd}
+                  >
                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-300">
-                      {image.preview ? (
-                        <img
-                          src={image.preview}
-                          alt={`Podgląd ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <img
-                          src={image.value}
-                          alt={`Zdjęcie ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://via.placeholder.com/400?text=Błąd+ładowania';
-                          }}
-                        />
+                      <img
+                        src={image.preview || image.value}
+                        alt={`Zdjęcie ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://via.placeholder.com/400?text=Błąd+ładowania';
+                        }}
+                      />
+
+                      {image.uploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+                            <p className="text-sm font-medium">Przesyłanie...</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {image.error && (
+                        <div className="absolute inset-0 bg-red-500 bg-opacity-90 flex items-center justify-center">
+                          <p className="text-white text-sm font-medium px-2 text-center">
+                            {image.error}
+                          </p>
+                        </div>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => removeImage(index)}
                       className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={image.uploading}
                     >
                       <X size={16} />
                     </button>
-                    <p className="text-xs text-gray-500 mt-1 truncate">
-                      {image.type === 'file' ? image.file?.name : 'URL'}
-                    </p>
+                    {!image.uploading && !image.error && (
+                      <>
+                        <div className="absolute bottom-2 left-2 bg-green-500 text-white rounded-full p-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                          </svg>
+                        </div>
+                        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          {index + 1}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -569,14 +699,13 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || images.some((img) => img.uploading)}
               className="flex-1 bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-semibold"
             >
-              {uploadingImages
-                ? 'Przesyłanie zdjęć...'
-                : loading
-                ? 'Dodawanie...'
-                : 'Dodaj ogłoszenie'}
+              {loading
+                ? (editingListing ? 'Aktualizowanie...' : 'Dodawanie...')
+                : (editingListing ? 'Zapisz zmiany' : 'Dodaj ogłoszenie')
+              }
             </button>
             <button
               type="button"
@@ -588,6 +717,7 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

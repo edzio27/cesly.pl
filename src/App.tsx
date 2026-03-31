@@ -5,17 +5,22 @@ import { ListingDetailPage } from './components/ListingDetailPage';
 import { AddListingPage } from './components/AddListingPage';
 import { ProfilePage } from './components/ProfilePage';
 import AdminScrapingPage from './components/AdminScrapingPage';
+import { Listing } from './lib/supabase';
 
 type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+  const [editingListing, setEditingListing] = useState<Listing | null>(null);
 
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
     if (page !== 'listing-detail') {
       setSelectedListingId(null);
+    }
+    if (page !== 'add-listing') {
+      setEditingListing(null);
     }
   };
 
@@ -24,7 +29,13 @@ function App() {
     setCurrentPage('listing-detail');
   };
 
+  const handleEditListing = (listing: Listing) => {
+    setEditingListing(listing);
+    setCurrentPage('add-listing');
+  };
+
   const handleAddListingSuccess = () => {
+    setEditingListing(null);
     setCurrentPage('profile');
   };
 
@@ -38,6 +49,7 @@ function App() {
         <ListingDetailPage
           listingId={selectedListingId}
           onBack={() => handleNavigate('home')}
+          onEdit={handleEditListing}
         />
       )}
 
@@ -45,6 +57,7 @@ function App() {
         <AddListingPage
           onBack={() => handleNavigate('home')}
           onSuccess={handleAddListingSuccess}
+          editingListing={editingListing}
         />
       )}
 

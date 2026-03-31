@@ -1,23 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ArrowLeft,
-  Heart,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 type ListingDetailPageProps = {
   listingId: string;
   onBack: () => void;
+  onEdit?: (listing: Listing) => void;
 };
 
-export function ListingDetailPage({ listingId, onBack }: ListingDetailPageProps) {
+export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPageProps) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -158,16 +150,17 @@ export function ListingDetailPage({ listingId, onBack }: ListingDetailPageProps)
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <button
-        onClick={onBack}
-        className="flex items-center text-blue-600 hover:text-blue-700 mb-6"
-      >
-        <ArrowLeft size={20} className="mr-2" />
-        Powrót do listy
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <button
+          onClick={onBack}
+          className="flex items-center text-blue-600 hover:text-blue-700 mb-6"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Powrót do listy
+        </button>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {listing.is_promoted && (
           <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 text-sm font-semibold flex items-center">
             <Star size={18} className="mr-2" fill="currentColor" />
@@ -228,16 +221,27 @@ export function ListingDetailPage({ listingId, onBack }: ListingDetailPageProps)
           <div>
             <div className="flex justify-between items-start mb-4">
               <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
-              <button
-                onClick={toggleFavorite}
-                className={`p-2 rounded-full transition ${
-                  isFavorite
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
-              </button>
+              <div className="flex gap-2">
+                {user && listing.user_id === user.id && onEdit && (
+                  <button
+                    onClick={() => onEdit(listing)}
+                    className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                    title="Edytuj ogłoszenie"
+                  >
+                    <Edit size={24} />
+                  </button>
+                )}
+                <button
+                  onClick={toggleFavorite}
+                  className={`p-2 rounded-full transition ${
+                    isFavorite
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
+                </button>
+              </div>
             </div>
 
             <div className="mb-6">
@@ -297,6 +301,7 @@ export function ListingDetailPage({ listingId, onBack }: ListingDetailPageProps)
               Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit } from 'lucide-react';
+import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit, Share2, Check } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,6 +14,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -149,6 +150,17 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const handleShare = async () => {
+    const url = `${window.location.origin}/listing/${listingId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -222,6 +234,13 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
             <div className="flex justify-between items-start mb-4">
               <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
               <div className="flex gap-2">
+                <button
+                  onClick={handleShare}
+                  className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+                  title="Udostępnij link"
+                >
+                  {copied ? <Check size={24} className="text-green-600" /> : <Share2 size={24} />}
+                </button>
                 {user && listing.user_id === user.id && onEdit && (
                   <button
                     onClick={() => onEdit(listing)}

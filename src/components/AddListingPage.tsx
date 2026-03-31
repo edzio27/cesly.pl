@@ -23,6 +23,7 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
   const [error, setError] = useState('');
   const [images, setImages] = useState<ImageItem[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -31,6 +32,7 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
     brand: '',
     model: '',
     year: new Date().getFullYear(),
+    mileage: '',
     monthlyPayment: '',
     buyoutPrice: '',
     transferFee: '',
@@ -58,10 +60,10 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
 
   const availableModels = formData.brand ? carModels[formData.brand] || [] : [];
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const processFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
 
-    for (const file of files) {
+    for (const file of fileArray) {
       const validationError = validateImageFile(file);
       if (validationError) {
         setError(validationError);
@@ -73,6 +75,35 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
         ...prev,
         { type: 'file', value: file.name, file, preview }
       ]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processFiles(e.target.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processFiles(files);
     }
   };
 
@@ -121,6 +152,7 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
         brand: formData.brand,
         model: formData.model,
         year: parseInt(formData.year.toString()),
+        mileage: formData.mileage ? parseInt(formData.mileage) : null,
         monthly_payment: parseFloat(formData.monthlyPayment),
         buyout_price: formData.buyoutPrice ? parseFloat(formData.buyoutPrice) : null,
         transfer_fee: parseFloat(formData.transferFee),
@@ -211,6 +243,22 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
                 max={new Date().getFullYear() + 1}
                 value={formData.year}
                 onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="mileage" className="block text-sm font-medium text-gray-700 mb-1">
+                Przebieg (km)
+              </label>
+              <input
+                id="mileage"
+                name="mileage"
+                type="number"
+                min="0"
+                value={formData.mileage}
+                onChange={handleChange}
+                placeholder="np. 50000"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -414,6 +462,36 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
               Zdjęcia
             </label>
 
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`mb-4 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 bg-gray-50'
+              }`}
+            >
+              <Upload
+                size={48}
+                className={`mx-auto mb-4 ${
+                  isDragging ? 'text-blue-500' : 'text-gray-400'
+                }`}
+              />
+              <p className="text-gray-700 font-medium mb-2">
+                Przeciągnij i upuść zdjęcia tutaj
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                lub kliknij poniżej, aby wybrać pliki
+              </p>
+              <p className="text-xs text-gray-400">
+                Obsługiwane formaty: JPG, PNG, WEBP, HEIC, BMP, TIFF (max 20 MB)
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Zdjęcia zostaną automatycznie skompresowane do 1 MB
+              </p>
+            </div>
+
             {images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 {images.map((image, index) => (
@@ -460,7 +538,7 @@ export function AddListingPage({ onBack, onSuccess }: AddListingPageProps) {
                 </div>
                 <input
                   type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,image/bmp,image/tiff,.heic,.heif"
                   multiple
                   onChange={handleFileSelect}
                   className="hidden"

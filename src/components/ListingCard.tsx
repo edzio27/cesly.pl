@@ -15,68 +15,77 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
   return (
     <div
       onClick={onView}
-      className="group bg-slate-800/40 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl hover:shadow-cyan-500/20 transition-all cursor-pointer border border-slate-700/50 hover:border-cyan-500/50 hover:scale-[1.03] duration-300"
+      className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.03] duration-300"
     >
       {listing.is_promoted && (
-        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-3 py-1.5 text-sm font-bold flex items-center">
+        <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-3 py-1.5 text-sm font-bold flex items-center">
           <Star size={16} className="mr-1.5" fill="currentColor" />
           PROMOWANE
         </div>
       )}
 
-      <div className="aspect-video w-full overflow-hidden bg-slate-900 relative">
+      <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
         <img
           src={mainImage}
           alt={listing.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
-        <div className="absolute bottom-3 left-3 px-3 py-1 bg-slate-900/80 backdrop-blur-sm rounded-full">
-          <span className="text-cyan-400 text-xs font-bold uppercase tracking-wide">
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
+        <div className="absolute bottom-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full">
+          <span className="text-amber-600 text-xs font-bold uppercase tracking-wide">
             {listing.vehicle_type}
           </span>
         </div>
       </div>
 
       <div className="p-5">
-        <h3 className="text-lg font-bold text-white mb-4 line-clamp-2 group-hover:text-cyan-400 transition-colors">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-amber-600 transition-colors">
           {listing.title}
         </h3>
 
         <div className="space-y-2.5 mb-4">
           <div className="flex justify-between text-sm items-center">
-            <span className="text-slate-400">Rata miesięczna:</span>
-            <span className="font-bold text-cyan-400 text-base">
+            <span className="text-gray-600">Rata miesięczna:</span>
+            <span className="font-bold text-amber-600 text-base">
               {listing.monthly_payment.toLocaleString('pl-PL')} zł
             </span>
           </div>
 
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Odstępne:</span>
-            <span className="font-semibold text-slate-200">
+            <span className="text-gray-600">Odstępne:</span>
+            <span className="font-semibold text-gray-900">
               {listing.transfer_fee.toLocaleString('pl-PL')} zł
             </span>
           </div>
 
           {listing.buyout_price && (
             <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Wykup:</span>
-              <span className="font-semibold text-slate-200">
+              <span className="text-gray-600">Wykup:</span>
+              <span className="font-semibold text-gray-900">
                 {listing.buyout_price.toLocaleString('pl-PL')} zł
               </span>
             </div>
           )}
 
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Pozostałe raty:</span>
-            <span className="font-semibold text-slate-200">
+            <span className="text-gray-600">Pozostałe raty:</span>
+            <span className="font-semibold text-gray-900">
               {listing.remaining_installments} / {listing.total_installments}
             </span>
           </div>
+
+          {listing.mileage && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Przebieg:</span>
+              <span className="font-semibold text-gray-900">
+                {listing.mileage.toLocaleString('pl-PL')} km
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-slate-700/50">
-          <div className="flex items-center text-sm text-slate-500">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+          <div className="flex items-center text-sm text-gray-500">
             <Calendar size={15} className="mr-1.5" />
             {new Date(listing.created_at).toLocaleDateString('pl-PL')}
           </div>

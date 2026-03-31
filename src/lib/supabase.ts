@@ -14,6 +14,7 @@ export type Listing = {
   brand: string;
   model: string;
   year: number;
+  mileage?: number;
   monthly_payment: number;
   buyout_price?: number;
   transfer_fee: number;

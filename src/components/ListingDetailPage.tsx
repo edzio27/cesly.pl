@@ -192,9 +192,9 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/listing/${listingId}`;
+    const shareUrl = `https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=${listingId}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {

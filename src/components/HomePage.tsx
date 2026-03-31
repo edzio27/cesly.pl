@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, TrendingUp, Shield, Users } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 
@@ -24,6 +24,7 @@ type Filters = {
 export function HomePage({ onViewListing }: HomePageProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     vehicleType: '',
     brand: '',
@@ -135,21 +136,57 @@ export function HomePage({ onViewListing }: HomePageProps) {
         <div className="mb-8 text-center">
           <div className="inline-block mb-4">
             <img
-              src="/transparent.png"
+              src="/cesly_logo_fixed.png"
               alt="Cesly.pl"
-              className="h-24 md:h-32 mx-auto"
+              className="h-16 md:h-20 mx-auto"
             />
           </div>
-          <div className="space-y-1">
-            <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-              Znajdź najlepsze oferty cesji leasingowych samochodów, motocykli i łodzi
-            </p>
+          <div className="space-y-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Największa baza cesji leasingów w Polsce
+            </h1>
+            <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <span className="font-semibold">+120 aktywnych ogłoszeń</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-600" />
+                <span className="font-semibold">+500 użytkowników</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
+              <TrendingUp className="w-5 h-5 text-amber-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Największa oferta</h3>
+            <p className="text-xs text-gray-600">Tysiące aktywnych ogłoszeń cesji leasingu w jednym miejscu</p>
+          </div>
+
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
+              <Shield className="w-5 h-5 text-amber-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Bezpieczne transakcje</h3>
+            <p className="text-xs text-gray-600">Weryfikowane ogłoszenia i bezpieczny kontakt z właścicielami</p>
+          </div>
+
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
+              <Users className="w-5 h-5 text-amber-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Sprawdzona społeczność</h3>
+            <p className="text-xs text-gray-600">Dołącz do setek zadowolonych użytkowników platformy</p>
           </div>
         </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg mb-8 border border-gray-200/50">
         <div className="px-6 py-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Typ pojazdu
@@ -194,7 +231,26 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 mt-4 transition-colors"
+          >
+            {showAdvancedFilters ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                <span>Ukryj zaawansowane filtry</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                <span>Pokaż zaawansowane filtry</span>
+              </>
+            )}
+          </button>
+
+          {showAdvancedFilters && (
+            <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Rata miesięczna (min)
@@ -252,7 +308,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 mt-3 border-t border-gray-200">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Min. odstępne (zł)
@@ -280,7 +336,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 mt-3 border-t border-gray-200">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Min. przebieg (km)
@@ -307,6 +363,8 @@ export function HomePage({ onViewListing }: HomePageProps) {
               />
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
 

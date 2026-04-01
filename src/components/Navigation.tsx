@@ -46,38 +46,20 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
             </button>
 
             <div className="hidden md:flex items-center space-x-3">
-              {user ? (
-                <>
-                  <button
-                    onClick={() => handleNavigate('add-listing')}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all font-medium"
-                  >
-                    <Plus size={20} />
-                    <span>Dodaj ogłoszenie</span>
-                  </button>
-                  <button
-                    onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-                  >
-                    <Menu size={24} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2 rounded-lg hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all font-medium"
-                  >
-                    <User size={20} />
-                    <span>Zaloguj się</span>
-                  </button>
-                  <button
-                    onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-                  >
-                    <Menu size={24} />
-                  </button>
-                </>
+              <button
+                onClick={() => user ? handleNavigate('add-listing') : setShowAuthModal(true)}
+                className="flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all font-medium"
+              >
+                <Plus size={20} />
+                <span>Dodaj ogłoszenie za darmo</span>
+              </button>
+              {user && (
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <Menu size={24} />
+                </button>
               )}
             </div>
 
@@ -90,53 +72,38 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
           </div>
         </div>
 
-        {showMobileMenu && (
+        {showMobileMenu && user && (
           <div className="border-t border-gray-200 bg-white/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-2">
-              {user ? (
-                <>
-                  <button
-                    onClick={() => handleNavigate('admin-scraping')}
-                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                      currentPage === 'admin-scraping'
-                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Settings size={20} />
-                    <span>Admin</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('profile')}
-                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                      currentPage === 'profile'
-                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <User size={20} />
-                    <span>Profil</span>
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center space-x-2 text-gray-700 hover:bg-red-500/20 hover:text-red-400 px-4 py-3 rounded-lg transition"
-                  >
-                    <LogOut size={20} />
-                    <span>Wyloguj</span>
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => {
-                    setShowAuthModal(true);
-                    setShowMobileMenu(false);
-                  }}
-                  className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-3 rounded-lg hover:shadow-lg transition font-medium"
-                >
-                  <User size={20} />
-                  <span>Zaloguj się</span>
-                </button>
-              )}
+              <button
+                onClick={() => handleNavigate('admin-scraping')}
+                className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                  currentPage === 'admin-scraping'
+                    ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Settings size={20} />
+                <span>Admin</span>
+              </button>
+              <button
+                onClick={() => handleNavigate('profile')}
+                className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                  currentPage === 'profile'
+                    ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <User size={20} />
+                <span>Profil</span>
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center space-x-2 text-gray-700 hover:bg-red-500/20 hover:text-red-400 px-4 py-3 rounded-lg transition"
+              >
+                <LogOut size={20} />
+                <span>Wyloguj</span>
+              </button>
             </div>
           </div>
         )}

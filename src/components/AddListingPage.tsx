@@ -43,6 +43,9 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     remainingInstallments: '',
     totalInstallments: '',
     priceType: 'brutto',
+    customContactName: '',
+    customContactPhone: '',
+    customContactEmail: '',
   });
 
   useEffect(() => {
@@ -61,6 +64,9 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
         remainingInstallments: editingListing.remaining_installments?.toString() || '',
         totalInstallments: editingListing.total_installments?.toString() || '',
         priceType: editingListing.price_type || 'brutto',
+        customContactName: editingListing.custom_contact_name || '',
+        customContactPhone: editingListing.custom_contact_phone || '',
+        customContactEmail: editingListing.custom_contact_email || '',
       });
 
       if (editingListing.images && editingListing.images.length > 0) {
@@ -243,6 +249,9 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
         total_installments: parseInt(formData.totalInstallments),
         price_type: formData.priceType,
         images: finalImageUrls,
+        custom_contact_name: formData.customContactName || null,
+        custom_contact_phone: formData.customContactPhone || null,
+        custom_contact_email: formData.customContactEmail || null,
       };
 
       if (editingListing) {
@@ -556,6 +565,63 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               placeholder="Szczegółowy opis pojazdu, stan techniczny, wyposażenie, historia..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Niestandardowy kontakt (opcjonalnie)
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Jeśli dodajesz ogłoszenie w imieniu innej osoby, możesz podać jej dane kontaktowe.
+              Jeśli pozostawisz puste, będą wyświetlane Twoje dane.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="customContactName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Imię i nazwisko
+                </label>
+                <input
+                  id="customContactName"
+                  name="customContactName"
+                  type="text"
+                  value={formData.customContactName}
+                  onChange={handleChange}
+                  placeholder="Jan Kowalski"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="customContactPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefon
+                </label>
+                <input
+                  id="customContactPhone"
+                  name="customContactPhone"
+                  type="tel"
+                  value={formData.customContactPhone}
+                  onChange={handleChange}
+                  placeholder="+48 123 456 789"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="customContactEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="customContactEmail"
+                  name="customContactEmail"
+                  type="email"
+                  value={formData.customContactEmail}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
           </div>
 
           <div>

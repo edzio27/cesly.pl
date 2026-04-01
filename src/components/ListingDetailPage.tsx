@@ -9,6 +9,12 @@ type ListingDetailPageProps = {
   onEdit?: (listing: Listing) => void;
 };
 
+type SellerProfile = {
+  phone?: string;
+  email?: string;
+  name?: string;
+};
+
 export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPageProps) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,6 +23,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
   const [copied, setCopied] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -76,6 +83,26 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
       if (error) throw error;
       setListing(data);
+
+      if (data) {
+        if (data.custom_contact_name || data.custom_contact_phone || data.custom_contact_email) {
+          setSellerProfile({
+            name: data.custom_contact_name || undefined,
+            phone: data.custom_contact_phone || undefined,
+            email: data.custom_contact_email || undefined
+          });
+        } else if (data.user_id) {
+          const [profileResult, emailResult] = await Promise.all([
+            supabase.from('profiles').select('phone').eq('id', data.user_id).maybeSingle(),
+            supabase.rpc('get_user_email', { user_id: data.user_id })
+          ]);
+
+          setSellerProfile({
+            phone: profileResult.data?.phone,
+            email: emailResult.data || undefined
+          });
+        }
+      }
     } catch (error) {
       console.error('Error fetching listing:', error);
     } finally {
@@ -193,12 +220,27 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
   const handleShare = async () => {
     const shareUrl = `https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=${listingId}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: listing?.title || 'Cesly',
+          text: listing?.description?.substring(0, 100) || 'Zobacz to ogłoszenie na Cesly',
+          url: shareUrl,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Share failed:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
     }
   };
 
@@ -311,10 +353,15 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
               <div className="flex gap-2">
                 <button
                   onClick={handleShare}
-                  className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
-                  title="Udostępnij link"
+                  className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition relative group"
+                  title="Udostępnij"
                 >
                   {copied ? <Check size={24} className="text-green-600" /> : <Share2 size={24} />}
+                  {copied && (
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                      Link skopiowany!
+                    </div>
+                  )}
                 </button>
                 {user && listing.user_id === user.id && onEdit && (
                   <button
@@ -389,6 +436,36 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
               <h2 className="text-xl font-semibold text-gray-900 mb-3">Opis</h2>
               <p className="text-gray-700 whitespace-pre-wrap">{listing.description}</p>
             </div>
+
+            {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">Kontakt</h2>
+                <div className="space-y-2">
+                  {sellerProfile.name && (
+                    <div className="flex items-center text-gray-700">
+                      <span className="font-medium mr-2">Kontakt:</span>
+                      <span className="text-gray-900">{sellerProfile.name}</span>
+                    </div>
+                  )}
+                  {sellerProfile.email && (
+                    <div className="flex items-center text-gray-700">
+                      <span className="font-medium mr-2">Email:</span>
+                      <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
+                        {sellerProfile.email}
+                      </a>
+                    </div>
+                  )}
+                  {sellerProfile.phone && (
+                    <div className="flex items-center text-gray-700">
+                      <span className="font-medium mr-2">Telefon:</span>
+                      <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
+                        {sellerProfile.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center text-sm text-gray-500">
               <Calendar size={16} className="mr-2" />

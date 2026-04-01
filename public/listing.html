@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Extract listing ID from URL
+      const pathParts = window.location.pathname.split('/');
+      const listingId = pathParts[pathParts.length - 1];
+
+      // Check if it's a bot/crawler
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isCrawler = /bot|crawler|spider|facebook|twitter|linkedin|whatsapp|telegram/i.test(userAgent);
+
+      if (isCrawler || !('onhashchange' in window)) {
+        // Redirect crawlers to the og-meta function
+        window.location.href = `https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=${listingId}`;
+      } else {
+        // Redirect normal users to the React app
+        window.location.href = `https://cesly.pl/#/listing/${listingId}`;
+      }
+    </script>
+    <title>Przekierowywanie...</title>
+  </head>
+  <body>
+    <p>Przekierowywanie do ogłoszenia...</p>
+  </body>
+</html>

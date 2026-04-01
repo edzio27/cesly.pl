@@ -24,6 +24,10 @@ export type Listing = {
   is_promoted: boolean;
   created_at: string;
   updated_at: string;
+  price_type?: string;
+  custom_contact_name?: string;
+  custom_contact_phone?: string;
+  custom_contact_email?: string;
 };
 
 export type Favorite = {

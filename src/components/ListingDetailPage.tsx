@@ -46,20 +46,28 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
       const description = `${listing.brand} ${listing.model} ${listing.year} - ${price}. ${listing.description.substring(0, 150)}...`;
 
-      document.title = `${listing.title} - Cesly`;
+      const seoTitle = `${listing.brand} ${listing.model} ${listing.year} - Cesja leasingu | Cesly.pl`;
+      const seoDescription = `Przejęcie leasingu: ${listing.brand} ${listing.model} ${listing.year}. Rata: ${price}. ${listing.description.substring(0, 120)}... Skontaktuj się z właścicielem i przejmij umowę leasingową.`;
 
-      updateMetaTag('name', 'description', description);
-      updateMetaTag('property', 'og:title', listing.title);
-      updateMetaTag('property', 'og:description', description);
+      document.title = seoTitle;
+
+      updateMetaTag('name', 'description', seoDescription);
+      updateMetaTag('name', 'keywords', `cesja leasingu ${listing.brand}, przejęcie leasingu ${listing.model}, ${listing.brand} ${listing.model} leasing, cesja umowy leasingowej, przejęcie rat leasingowych`);
+      updateMetaTag('property', 'og:title', seoTitle);
+      updateMetaTag('property', 'og:description', seoDescription);
       updateMetaTag('property', 'og:image', image);
-      updateMetaTag('property', 'og:url', `${window.location.origin}/listing/${listingId}`);
-      updateMetaTag('name', 'twitter:title', listing.title);
-      updateMetaTag('name', 'twitter:description', description);
+      updateMetaTag('property', 'og:url', `https://cesly.pl/listing/${listingId}`);
+      updateMetaTag('property', 'og:type', 'product');
+      updateMetaTag('name', 'twitter:title', seoTitle);
+      updateMetaTag('name', 'twitter:description', seoDescription);
       updateMetaTag('name', 'twitter:image', image);
+
+      addStructuredData(listing, image, price);
     }
 
     return () => {
-      document.title = 'Cesly - Przejęcia leasingu i wynajem samochodów';
+      document.title = 'Cesly.pl - Cesja leasingu, przejęcie umowy leasingowej | Ogłoszenia z całej Polski';
+      removeStructuredData();
     };
   }, [listing, listingId]);
 
@@ -71,6 +79,72 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
       document.head.appendChild(element);
     }
     element.setAttribute('content', content);
+  };
+
+  const addStructuredData = (listing: Listing, image: string, price: string) => {
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": `${listing.brand} ${listing.model} ${listing.year}`,
+      "description": listing.description,
+      "image": image,
+      "brand": {
+        "@type": "Brand",
+        "name": listing.brand
+      },
+      "model": listing.model,
+      "productionDate": listing.year?.toString(),
+      "vehicleEngine": {
+        "@type": "EngineSpecification",
+        "fuelType": listing.fuel_type
+      },
+      "mileageFromOdometer": {
+        "@type": "QuantitativeValue",
+        "value": listing.mileage,
+        "unitCode": "KMT"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": `https://cesly.pl/listing/${listing.id}`,
+        "priceCurrency": "PLN",
+        "price": listing.price,
+        "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        "availability": "https://schema.org/InStock",
+        "seller": {
+          "@type": "Person"
+        }
+      },
+      "additionalProperty": [
+        {
+          "@type": "PropertyValue",
+          "name": "Typ oferty",
+          "value": "Cesja leasingu"
+        },
+        {
+          "@type": "PropertyValue",
+          "name": "Pozostałe raty",
+          "value": listing.remaining_installments
+        },
+        {
+          "@type": "PropertyValue",
+          "name": "Typ pojazdu",
+          "value": listing.vehicle_type
+        }
+      ]
+    };
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'listing-structured-data';
+    script.textContent = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+  };
+
+  const removeStructuredData = () => {
+    const script = document.getElementById('listing-structured-data');
+    if (script) {
+      script.remove();
+    }
   };
 
   const fetchListing = async () => {

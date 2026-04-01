@@ -1,0 +1,53 @@
+# robots.txt for Cesly.pl
+User-agent: *
+Allow: /
+Allow: /listing/
+
+# Google bots
+User-agent: Googlebot
+Allow: /
+Allow: /listing/
+
+User-agent: Googlebot-Image
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Allow: /listing/
+
+# ChatGPT/OpenAI
+User-agent: GPTBot
+Allow: /
+Allow: /listing/
+
+# Claude
+User-agent: ClaudeBot
+Allow: /
+Allow: /listing/
+
+# Other AI crawlers
+User-agent: anthropic-ai
+Allow: /
+Allow: /listing/
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /listing/
+
+User-agent: cohere-ai
+Allow: /
+Allow: /listing/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /listing/
+
+User-agent: YouBot
+Allow: /
+Allow: /listing/
+
+Sitemap: https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/sitemap
+
+# Crawl delay (optional)
+Crawl-delay: 1

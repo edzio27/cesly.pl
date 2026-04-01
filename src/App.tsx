@@ -5,9 +5,10 @@ import { ListingDetailPage } from './components/ListingDetailPage';
 import { AddListingPage } from './components/AddListingPage';
 import { ProfilePage } from './components/ProfilePage';
 import AdminScrapingPage from './components/AdminScrapingPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import { Listing } from './lib/supabase';
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -30,6 +31,8 @@ function App() {
       setCurrentPage('profile');
     } else if (path === '/admin-scraping') {
       setCurrentPage('admin-scraping');
+    } else if (path === '/reset-password') {
+      setCurrentPage('reset-password');
     } else {
       setCurrentPage('home');
     }
@@ -48,6 +51,8 @@ function App() {
         setCurrentPage('profile');
       } else if (newPath === '/admin-scraping') {
         setCurrentPage('admin-scraping');
+      } else if (newPath === '/reset-password') {
+        setCurrentPage('reset-password');
       } else {
         setCurrentPage('home');
         setSelectedListingId(null);
@@ -119,6 +124,8 @@ function App() {
       {currentPage === 'profile' && <ProfilePage onViewListing={handleViewListing} />}
 
       {currentPage === 'admin-scraping' && <AdminScrapingPage />}
+
+      {currentPage === 'reset-password' && <ResetPasswordPage />}
     </div>
   );
 }

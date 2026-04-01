@@ -376,53 +376,6 @@ export function HomePage({ onViewListing }: HomePageProps) {
         </div>
       </div>
 
-      <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Cesja leasingu - przejmij umowę leasingową bez zbędnych formalności</h1>
-        <div className="prose prose-gray max-w-none">
-          <p className="text-gray-700 mb-4">
-            <strong>Cesly.pl</strong> to nowoczesna platforma umożliwiająca <strong>cesję i przejęcie umów leasingowych</strong> na samochody oraz inne pojazdy.
-            Jeśli chcesz <strong>odstąpić leasing</strong> lub <strong>przejąć rat leasingowych</strong>, jesteś w odpowiednim miejscu.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6 my-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Czym jest cesja leasingu?</h2>
-              <p className="text-gray-700 text-sm">
-                <strong>Cesja umowy leasingowej</strong> to przeniesienie praw i obowiązków wynikających z umowy leasingu na inną osobę.
-                Dzięki cesji możesz <strong>przejąć leasing samochodu</strong> bez konieczności zawierania nowej umowy od początku,
-                często z korzystniejszymi warunkami niż standardowy leasing.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Korzyści z przejęcia leasingu</h2>
-              <ul className="text-gray-700 text-sm space-y-2">
-                <li>Niższe koszty wejścia niż przy nowym leasingu</li>
-                <li>Możliwość jazdy luksusowym autem za mniejsze raty</li>
-                <li>Sprawdzona historia pojazdu</li>
-                <li>Krótszy okres zobowiązania</li>
-                <li>Szybka procedura przejęcia</li>
-              </ul>
-            </div>
-          </div>
-
-          <p className="text-gray-700 text-sm mb-4">
-            Na Cesly.pl znajdziesz setki ogłoszeń <strong>cesji leasingowych</strong> z całej Polski.
-            Oferujemy <strong>przejęcie umowy leasingowej</strong> dla różnych marek i modeli - od miejskich aut po samochody premium.
-            Wszystkie ogłoszenia są weryfikowane, a kontakt z właścicielem jest prosty i bezpośredni.
-          </p>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Popularne wyszukiwania:</h3>
-            <p className="text-sm text-gray-700">
-              cesja leasingu BMW • przejęcie leasingu Audi • cesja umowy leasingowej Mercedes •
-              przejęcie rat leasingowych • odstąpienie leasingu samochodu • wynajem długoterminowy cesja •
-              przejęcie leasingu operacyjnego • cesja leasingu finansowego
-            </p>
-          </div>
-        </div>
-      </section>
-
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>

@@ -20,8 +20,11 @@ function App() {
   useEffect(() => {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
 
-    if (path.startsWith('/listing/')) {
+    if (path === '/reset-password' || (hash && hash.includes('type=recovery'))) {
+      setCurrentPage('reset-password');
+    } else if (path.startsWith('/listing/')) {
       const id = path.split('/listing/')[1];
       if (id) {
         setSelectedListingId(id);
@@ -33,8 +36,6 @@ function App() {
       setCurrentPage('profile');
     } else if (path === '/admin-scraping') {
       setCurrentPage('admin-scraping');
-    } else if (path === '/reset-password') {
-      setCurrentPage('reset-password');
     } else if (path === '/bulk-import') {
       setCurrentPage('bulk-import');
     } else if (path === '/facebook-import') {
@@ -45,7 +46,10 @@ function App() {
 
     const handlePopState = () => {
       const newPath = window.location.pathname;
-      if (newPath.startsWith('/listing/')) {
+      const newHash = window.location.hash;
+      if (newPath === '/reset-password' || (newHash && newHash.includes('type=recovery'))) {
+        setCurrentPage('reset-password');
+      } else if (newPath.startsWith('/listing/')) {
         const id = newPath.split('/listing/')[1];
         if (id) {
           setSelectedListingId(id);
@@ -57,8 +61,6 @@ function App() {
         setCurrentPage('profile');
       } else if (newPath === '/admin-scraping') {
         setCurrentPage('admin-scraping');
-      } else if (newPath === '/reset-password') {
-        setCurrentPage('reset-password');
       } else if (newPath === '/bulk-import') {
         setCurrentPage('bulk-import');
       } else if (newPath === '/facebook-import') {

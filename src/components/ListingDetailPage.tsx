@@ -366,189 +366,191 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-          <div>
-            <div
-              className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4 cursor-zoom-in"
-              onClick={() => openLightbox(currentImageIndex)}
-            >
-              <img
-                src={images[currentImageIndex]}
-                alt={listing.title}
-                className="w-full h-full object-cover"
-              />
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div>
+              <div
+                className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4 cursor-zoom-in"
+                onClick={() => openLightbox(currentImageIndex)}
+              >
+                <img
+                  src={images[currentImageIndex]}
+                  alt={listing.title}
+                  className="w-full h-full object-cover"
+                />
+
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        prevImage();
+                      }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        nextImage();
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                      {currentImageIndex + 1} / {images.length}
+                    </div>
+                  </>
+                )}
+              </div>
 
               {images.length > 1 && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      prevImage();
-                    }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      nextImage();
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
-                  >
-                    <ChevronRight size={24} />
-                  </button>
-
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
-                    {currentImageIndex + 1} / {images.length}
-                  </div>
-                </>
+                <div className="grid grid-cols-6 gap-2">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`aspect-video rounded overflow-hidden border-2 transition ${
+                        currentImageIndex === idx
+                          ? 'border-blue-600'
+                          : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
-            {images.length > 1 && (
-              <div className="grid grid-cols-6 gap-2">
-                {images.map((img, idx) => (
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
+                <div className="flex gap-2">
                   <button
-                    key={idx}
-                    onClick={() => setCurrentImageIndex(idx)}
-                    className={`aspect-video rounded overflow-hidden border-2 transition ${
-                      currentImageIndex === idx
-                        ? 'border-blue-600'
-                        : 'border-gray-200 hover:border-gray-400'
+                    onClick={handleShare}
+                    className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition relative group"
+                    title="Udostępnij"
+                  >
+                    {copied ? <Check size={24} className="text-green-600" /> : <Share2 size={24} />}
+                    {copied && (
+                      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                        Link skopiowany!
+                      </div>
+                    )}
+                  </button>
+                  {user && listing.user_id === user.id && onEdit && (
+                    <button
+                      onClick={() => onEdit(listing)}
+                      className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                      title="Edytuj ogłoszenie"
+                    >
+                      <Edit size={24} />
+                    </button>
+                  )}
+                  <button
+                    onClick={toggleFavorite}
+                    className={`p-2 rounded-full transition ${
+                      isFavorite
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="flex justify-between items-start mb-4">
-              <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleShare}
-                  className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition relative group"
-                  title="Udostępnij"
-                >
-                  {copied ? <Check size={24} className="text-green-600" /> : <Share2 size={24} />}
-                  {copied && (
-                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                      Link skopiowany!
-                    </div>
-                  )}
-                </button>
-                {user && listing.user_id === user.id && onEdit && (
-                  <button
-                    onClick={() => onEdit(listing)}
-                    className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
-                    title="Edytuj ogłoszenie"
-                  >
-                    <Edit size={24} />
-                  </button>
-                )}
-                <button
-                  onClick={toggleFavorite}
-                  className={`p-2 rounded-full transition ${
-                    isFavorite
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                {listing.vehicle_type}
-              </span>
-              <span className="inline-block ml-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                {listing.brand} {listing.model} ({listing.year})
-              </span>
-            </div>
-
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Parametry finansowe
-              </h2>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Rata miesięczna:</span>
-                  <span className="text-2xl font-bold text-blue-600">
-                    {listing.monthly_payment.toLocaleString('pl-PL')} zł
-                  </span>
                 </div>
+              </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Odstępne:</span>
-                  <span className="text-xl font-bold text-gray-900">
-                    {listing.transfer_fee.toLocaleString('pl-PL')} zł
-                  </span>
-                </div>
+              <div className="mb-6">
+                <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                  {listing.vehicle_type}
+                </span>
+                <span className="inline-block ml-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                  {listing.brand} {listing.model} ({listing.year})
+                </span>
+              </div>
 
-                {listing.buyout_price && (
+              <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Parametry finansowe
+                </h2>
+
+                <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Cena wykupu:</span>
-                    <span className="text-xl font-bold text-gray-900">
-                      {listing.buyout_price.toLocaleString('pl-PL')} zł
+                    <span className="text-gray-700 font-medium">Rata miesięczna:</span>
+                    <span className="text-2xl font-bold text-blue-600">
+                      {listing.monthly_payment.toLocaleString('pl-PL')} zł
                     </span>
                   </div>
-                )}
 
-                <div className="flex justify-between items-center pt-3 border-t border-blue-200">
-                  <span className="text-gray-700 font-medium">Pozostałe raty:</span>
-                  <span className="text-lg font-bold text-gray-900">
-                    {listing.remaining_installments} z {listing.total_installments}
-                  </span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700 font-medium">Odstępne:</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      {listing.transfer_fee.toLocaleString('pl-PL')} zł
+                    </span>
+                  </div>
+
+                  {listing.buyout_price && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 font-medium">Cena wykupu:</span>
+                      <span className="text-xl font-bold text-gray-900">
+                        {listing.buyout_price.toLocaleString('pl-PL')} zł
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center pt-3 border-t border-blue-200">
+                    <span className="text-gray-700 font-medium">Pozostałe raty:</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {listing.remaining_installments} z {listing.total_installments}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Opis</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{listing.description}</p>
-            </div>
-
-            {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-3">Kontakt</h2>
-                <div className="space-y-2">
-                  {sellerProfile.name && (
-                    <div className="flex items-center text-gray-700">
-                      <span className="font-medium mr-2">Kontakt:</span>
-                      <span className="text-gray-900">{sellerProfile.name}</span>
-                    </div>
-                  )}
-                  {sellerProfile.email && (
-                    <div className="flex items-center text-gray-700">
-                      <span className="font-medium mr-2">Email:</span>
-                      <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
-                        {sellerProfile.email}
-                      </a>
-                    </div>
-                  )}
-                  {sellerProfile.phone && (
-                    <div className="flex items-center text-gray-700">
-                      <span className="font-medium mr-2">Telefon:</span>
-                      <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
-                        {sellerProfile.phone}
-                      </a>
-                    </div>
-                  )}
+              {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Kontakt</h2>
+                  <div className="space-y-2">
+                    {sellerProfile.name && (
+                      <div className="flex items-center text-gray-700">
+                        <span className="font-medium mr-2">Kontakt:</span>
+                        <span className="text-gray-900">{sellerProfile.name}</span>
+                      </div>
+                    )}
+                    {sellerProfile.email && (
+                      <div className="flex items-center text-gray-700">
+                        <span className="font-medium mr-2">Email:</span>
+                        <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
+                          {sellerProfile.email}
+                        </a>
+                      </div>
+                    )}
+                    {sellerProfile.phone && (
+                      <div className="flex items-center text-gray-700">
+                        <span className="font-medium mr-2">Telefon:</span>
+                        <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
+                          {sellerProfile.phone}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="flex items-center text-sm text-gray-500">
-              <Calendar size={16} className="mr-2" />
-              Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
+              <div className="flex items-center text-sm text-gray-500">
+                <Calendar size={16} className="mr-2" />
+                Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
+              </div>
             </div>
+          </div>
+
+          <div className="border-t border-gray-200 pt-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">Opis</h2>
+            <p className="text-gray-700 whitespace-pre-wrap">{listing.description}</p>
           </div>
         </div>
         </div>

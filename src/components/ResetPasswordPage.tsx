@@ -11,15 +11,23 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const type = hashParams.get('type');
+    const checkSession = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
 
-    console.log('Hash params:', { accessToken: accessToken?.substring(0, 20) + '...', type });
+      console.log('Hash params:', { accessToken: accessToken?.substring(0, 20) + '...', type });
 
-    if (!accessToken || type !== 'recovery') {
-      setError('Link resetowania hasła jest nieprawidłowy lub wygasł. Spróbuj ponownie zresetować hasło.');
-    }
+      if (!accessToken || type !== 'recovery') {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          setError('Link resetowania hasła jest nieprawidłowy lub wygasł. Spróbuj ponownie zresetować hasło.');
+        }
+      }
+    };
+
+    checkSession();
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {

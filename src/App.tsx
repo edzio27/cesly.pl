@@ -6,9 +6,11 @@ import { AddListingPage } from './components/AddListingPage';
 import { ProfilePage } from './components/ProfilePage';
 import AdminScrapingPage from './components/AdminScrapingPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
+import BulkImportPage from './components/BulkImportPage';
+import BookmarkletPage from './components/BookmarkletPage';
 import { Listing } from './lib/supabase';
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -33,6 +35,10 @@ function App() {
       setCurrentPage('admin-scraping');
     } else if (path === '/reset-password') {
       setCurrentPage('reset-password');
+    } else if (path === '/bulk-import') {
+      setCurrentPage('bulk-import');
+    } else if (path === '/facebook-import') {
+      setCurrentPage('bookmarklet');
     } else {
       setCurrentPage('home');
     }
@@ -53,6 +59,10 @@ function App() {
         setCurrentPage('admin-scraping');
       } else if (newPath === '/reset-password') {
         setCurrentPage('reset-password');
+      } else if (newPath === '/bulk-import') {
+        setCurrentPage('bulk-import');
+      } else if (newPath === '/facebook-import') {
+        setCurrentPage('bookmarklet');
       } else {
         setCurrentPage('home');
         setSelectedListingId(null);
@@ -70,6 +80,8 @@ function App() {
     if (page === 'add-listing') url = '/add';
     else if (page === 'profile') url = '/profile';
     else if (page === 'admin-scraping') url = '/admin-scraping';
+    else if (page === 'bulk-import') url = '/bulk-import';
+    else if (page === 'bookmarklet') url = '/facebook-import';
 
     window.history.pushState({}, '', url);
 
@@ -124,6 +136,10 @@ function App() {
       {currentPage === 'profile' && <ProfilePage onViewListing={handleViewListing} />}
 
       {currentPage === 'admin-scraping' && <AdminScrapingPage />}
+
+      {currentPage === 'bulk-import' && <BulkImportPage />}
+
+      {currentPage === 'bookmarklet' && <BookmarkletPage />}
 
       {currentPage === 'reset-password' && <ResetPasswordPage />}
     </div>

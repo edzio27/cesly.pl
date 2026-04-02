@@ -7,4 +7,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    proxy: {
+      '/listing': {
+        target: 'https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/listing/, '/listing'),
+      },
+    },
+  },
 });

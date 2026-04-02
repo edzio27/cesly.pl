@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, User, Plus, Heart, LogOut, Settings, Menu, X } from 'lucide-react';
+import { Car, User, Plus, Heart, LogOut, Settings, Menu, X, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
 import { Logo } from './Logo';
@@ -75,6 +75,17 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
         {showMobileMenu && user && (
           <div className="border-t border-gray-200 bg-white/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-2">
+              <button
+                onClick={() => handleNavigate('bulk-import')}
+                className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                  currentPage === 'bulk-import'
+                    ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Upload size={20} />
+                <span>Masowy Import</span>
+              </button>
               <button
                 onClick={() => handleNavigate('admin-scraping')}
                 className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${

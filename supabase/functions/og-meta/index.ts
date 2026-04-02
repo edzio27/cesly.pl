@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
 
     const description = `${listing.brand} ${listing.model} ${listing.year} - ${price}. ${listing.description.substring(0, 150)}${listing.description.length > 150 ? '...' : ''}`;
     const appUrl = `https://cesly.pl/#/listing/${listingId}`;
-    const shareUrl = `https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=${listingId}`;
+    const shareUrl = `https://cesly.pl/listing/${listingId}`;
 
     const html = `<!doctype html>
 <html lang="pl">

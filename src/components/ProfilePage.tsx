@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, FileText, Heart, Clock, Trash2 } from 'lucide-react';
+import { User, FileText, Heart, Clock, Trash2, File as FileEdit } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ListingCard } from './ListingCard';
@@ -8,12 +8,13 @@ type ProfilePageProps = {
   onViewListing: (id: string) => void;
 };
 
-type Tab = 'my-listings' | 'favorites' | 'recent';
+type Tab = 'my-listings' | 'drafts' | 'favorites' | 'recent';
 
 export function ProfilePage({ onViewListing }: ProfilePageProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('my-listings');
   const [myListings, setMyListings] = useState<Listing[]>([]);
+  const [draftListings, setDraftListings] = useState<Listing[]>([]);
   const [favoriteListings, setFavoriteListings] = useState<Listing[]>([]);
   const [recentListings, setRecentListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +35,21 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
           .from('listings')
           .select('*')
           .eq('user_id', user.id)
+          .eq('status', 'published')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
         setMyListings(data || []);
+      } else if (activeTab === 'drafts') {
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('status', 'draft')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setDraftListings(data || []);
       } else if (activeTab === 'favorites') {
         const { data: favorites, error: favError } = await supabase
           .from('favorites')
@@ -120,6 +132,7 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
 
   const tabs = [
     { id: 'my-listings' as Tab, label: 'Moje ogłoszenia', icon: FileText },
+    { id: 'drafts' as Tab, label: 'Szkice', icon: FileEdit },
     { id: 'favorites' as Tab, label: 'Ulubione', icon: Heart },
     { id: 'recent' as Tab, label: 'Ostatnio oglądane', icon: Clock },
   ];
@@ -128,6 +141,8 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
     switch (activeTab) {
       case 'my-listings':
         return myListings;
+      case 'drafts':
+        return draftListings;
       case 'favorites':
         return favoriteListings;
       case 'recent':
@@ -184,6 +199,7 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg">
                 {activeTab === 'my-listings' && 'Nie masz jeszcze żadnych ogłoszeń'}
+                {activeTab === 'drafts' && 'Nie masz żadnych szkiców'}
                 {activeTab === 'favorites' && 'Nie masz jeszcze ulubionych ogłoszeń'}
                 {activeTab === 'recent' && 'Nie oglądałeś jeszcze żadnych ogłoszeń'}
               </p>
@@ -193,7 +209,7 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
               {getCurrentListings().map((listing) => (
                 <div key={listing.id} className="relative">
                   <ListingCard listing={listing} onView={() => onViewListing(listing.id)} />
-                  {activeTab === 'my-listings' && (
+                  {(activeTab === 'my-listings' || activeTab === 'drafts') && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/listing/:id",
-      "destination": "https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=:id"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -80,6 +80,44 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     }
   }, [editingListing]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('description') || params.has('price') || params.has('make')) {
+      const description = params.get('description') || '';
+      const price = params.get('price') || '';
+      const make = params.get('make') || '';
+      const year = params.get('year') || '';
+      const sourceUrl = params.get('source_url') || '';
+
+      setFormData(prev => ({
+        ...prev,
+        description: description || prev.description,
+        brand: make || prev.brand,
+        year: year ? parseInt(year) : prev.year,
+        monthlyPayment: price || prev.monthlyPayment,
+      }));
+
+      if (sourceUrl) {
+        setFbUrl(sourceUrl);
+      }
+
+      const imagesParam = params.get('images');
+      if (imagesParam) {
+        try {
+          const imageUrls = JSON.parse(imagesParam);
+          if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+            setImages(imageUrls.map(url => ({ type: 'url' as const, value: url })));
+          }
+        } catch (e) {
+          console.error('Failed to parse images parameter:', e);
+        }
+      }
+
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   if (!user) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,0 +1,29 @@
+UWAGA: Musisz dodać 3 ikony przed instalacją rozszerzenia!
+
+Potrzebujesz 3 plików:
+- icon16.png (16x16 pikseli)
+- icon48.png (48x48 pikseli)
+- icon128.png (128x128 pikseli)
+
+OPCJA 1 - Użyj logo Cesly z projektu:
+====================================
+1. Skopiuj plik: /tmp/cc-agent/65072556/project/public/cesly_logo_cropped_tight_v2.png
+2. Zmień rozmiar na 128x128, 48x48 i 16x16 pikseli (użyj https://www.iloveimg.com/resize-image)
+3. Zapisz jako icon128.png, icon48.png, icon16.png w folderze chrome-extension/
+
+OPCJA 2 - Użyj generatora online:
+==================================
+1. Wejdź na: https://www.favicon-generator.org/
+2. Wgraj logo Cesly lub stwórz prostą ikonę z literą "C"
+3. Pobierz i zmień nazwy na icon16.png, icon48.png, icon128.png
+4. Skopiuj do folderu chrome-extension/
+
+OPCJA 3 - Prosty placeholder (najszybsze):
+==========================================
+1. Wejdź na: https://via.placeholder.com/128/1e40af/ffffff?text=C
+2. Kliknij prawym przyciskiem myszy i "Zapisz jako" -> icon128.png
+3. Powtórz dla https://via.placeholder.com/48/1e40af/ffffff?text=C -> icon48.png
+4. Powtórz dla https://via.placeholder.com/16/1e40af/ffffff?text=C -> icon16.png
+5. Wszystkie pliki zapisz w folderze chrome-extension/
+
+Po dodaniu ikon możesz zainstalować rozszerzenie zgodnie z instrukcjami w README.md

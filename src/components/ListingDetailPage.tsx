@@ -256,10 +256,12 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Ładowanie...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Ładowanie...</p>
+          </div>
         </div>
       </div>
     );
@@ -267,15 +269,17 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
   if (!listing) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button
-          onClick={onBack}
-          className="flex items-center text-blue-600 hover:text-blue-700 mb-4"
-        >
-          <ArrowLeft size={20} className="mr-2" />
-          Powrót
-        </button>
-        <p className="text-center text-gray-600 text-lg">Ogłoszenie nie zostało znalezione</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <button
+            onClick={onBack}
+            className="flex items-center text-blue-600 hover:text-blue-700 mb-4"
+          >
+            <ArrowLeft size={20} className="mr-2" />
+            Powrót
+          </button>
+          <p className="text-center text-gray-600 text-lg">Ogłoszenie nie zostało znalezione</p>
+        </div>
       </div>
     );
   }
@@ -293,7 +297,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
   };
 
   const handleShare = async () => {
-    const shareUrl = `https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=${listingId}`;
+    const shareUrl = `https://cesly.pl/listing/${listingId}`;
 
     if (navigator.share) {
       try {

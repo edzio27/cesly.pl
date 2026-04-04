@@ -72,49 +72,71 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
           </div>
         </div>
 
-        {showMobileMenu && user && (
-          <div className="border-t border-gray-200 bg-white/95 backdrop-blur-md">
+        {showMobileMenu && (
+          <div className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-2">
-              <button
-                onClick={() => handleNavigate('bulk-import')}
-                className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                  currentPage === 'bulk-import'
-                    ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Upload size={20} />
-                <span>Masowy Import</span>
-              </button>
-              <button
-                onClick={() => handleNavigate('admin-scraping')}
-                className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                  currentPage === 'admin-scraping'
-                    ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Settings size={20} />
-                <span>Admin</span>
-              </button>
-              <button
-                onClick={() => handleNavigate('profile')}
-                className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                  currentPage === 'profile'
-                    ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <User size={20} />
-                <span>Profil</span>
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center space-x-2 text-gray-700 hover:bg-red-500/20 hover:text-red-400 px-4 py-3 rounded-lg transition"
-              >
-                <LogOut size={20} />
-                <span>Wyloguj</span>
-              </button>
+              {user ? (
+                <>
+                  <button
+                    onClick={() => handleNavigate('add-listing')}
+                    className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+                  >
+                    <Plus size={20} />
+                    <span>Dodaj ogłoszenie za darmo</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('bulk-import')}
+                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                      currentPage === 'bulk-import'
+                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Upload size={20} />
+                    <span>Masowy Import</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('admin-scraping')}
+                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                      currentPage === 'admin-scraping'
+                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Settings size={20} />
+                    <span>Admin</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('profile')}
+                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                      currentPage === 'profile'
+                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <User size={20} />
+                    <span>Profil</span>
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center space-x-2 text-gray-700 hover:bg-red-500/20 hover:text-red-400 px-4 py-3 rounded-lg transition"
+                  >
+                    <LogOut size={20} />
+                    <span>Wyloguj</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+                >
+                  <User size={20} />
+                  <span>Zaloguj się</span>
+                </button>
+              )}
             </div>
           </div>
         )}

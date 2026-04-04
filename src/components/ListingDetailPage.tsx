@@ -24,6 +24,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
+  const [suggestedListings, setSuggestedListings] = useState<Listing[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -33,6 +34,12 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
       addRecentView();
     }
   }, [listingId, user]);
+
+  useEffect(() => {
+    if (listing) {
+      fetchSuggestedListings();
+    }
+  }, [listing]);
 
   useEffect(() => {
     if (listing) {
@@ -225,6 +232,27 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
       });
     } catch (error) {
       console.error('Error adding recent view:', error);
+    }
+  };
+
+  const fetchSuggestedListings = async () => {
+    if (!listing) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .neq('id', listingId)
+        .or(`brand.eq.${listing.brand},vehicle_type.eq.${listing.vehicle_type}`)
+        .eq('status', 'active')
+        .order('is_promoted', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (error) throw error;
+      setSuggestedListings(data || []);
+    } catch (error) {
+      console.error('Error fetching suggested listings:', error);
     }
   };
 
@@ -554,6 +582,86 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
           </div>
         </div>
         </div>
+
+        {suggestedListings.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Proponowane ogłoszenia</h2>
+            <div className="relative">
+              <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scrollbar-hide">
+                {suggestedListings.map((suggestedListing) => {
+                  const mainImage = suggestedListing.images && suggestedListing.images.length > 0
+                    ? suggestedListing.images[0]
+                    : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
+
+                  return (
+                    <div
+                      key={suggestedListing.id}
+                      onClick={() => window.location.hash = `/listing/${suggestedListing.id}`}
+                      className="flex-none w-72 snap-start"
+                    >
+                      <div className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300">
+                        {suggestedListing.is_promoted && (
+                          <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-2 py-1 text-xs font-bold flex items-center">
+                            <Star size={14} className="mr-1" fill="currentColor" />
+                            PROMOWANE
+                          </div>
+                        )}
+
+                        <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
+                          <img
+                            src={mainImage}
+                            alt={suggestedListing.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
+                          <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full">
+                            <span className="text-amber-600 text-xs font-bold uppercase tracking-wide">
+                              {suggestedListing.vehicle_type}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-4">
+                          <h3 className="text-base font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-amber-600 transition-colors">
+                            {suggestedListing.title}
+                          </h3>
+
+                          <div className="space-y-2 mb-3">
+                            <div className="flex justify-between text-sm items-center">
+                              <span className="text-gray-600">Rata:</span>
+                              <span className="font-bold text-amber-600">
+                                {suggestedListing.monthly_payment.toLocaleString('pl-PL')} zł
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Odstępne:</span>
+                              <span className="font-semibold text-gray-900">
+                                {suggestedListing.transfer_fee.toLocaleString('pl-PL')} zł
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Pozostałe raty:</span>
+                              <span className="font-semibold text-gray-900">
+                                {suggestedListing.remaining_installments} / {suggestedListing.total_installments}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center text-xs text-gray-500 pt-2 border-t border-gray-200">
+                            <Calendar size={13} className="mr-1" />
+                            {new Date(suggestedListing.created_at).toLocaleDateString('pl-PL')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {lightboxOpen && (

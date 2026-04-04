@@ -63,8 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
+    const redirectUrl = window.location.hostname === 'localhost'
+      ? 'http://localhost:5173/#/reset-password'
+      : 'https://cesly.pl/#/reset-password';
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: redirectUrl,
     });
     if (error) throw error;
   };

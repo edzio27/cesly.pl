@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, User, Plus, Heart, LogOut, Settings, Menu, X, Upload } from 'lucide-react';
+import { Car, User, Plus, Heart, LogOut, Settings, Menu, X, Upload, BarChart3 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
 import { Logo } from './Logo';
@@ -105,6 +105,17 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                   >
                     <Settings size={20} />
                     <span>Admin</span>
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('analytics')}
+                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
+                      currentPage === 'analytics'
+                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <BarChart3 size={20} />
+                    <span>Statystyki</span>
                   </button>
                   <button
                     onClick={() => handleNavigate('profile')}

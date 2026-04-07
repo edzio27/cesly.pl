@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Star, ChevronDown, ChevronUp, TrendingUp, Shield, Users } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
+import { trackPageView } from '../utils/analytics';
 
 type HomePageProps = {
   onViewListing: (id: string) => void;
@@ -45,6 +46,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
     if (metaDesc) {
       metaDesc.setAttribute('content', 'Cesly.pl to platforma do cesji i przejęcia leasingu samochodów. Znajdź oferty przejęcia umowy leasingowej, odstąp leasing lub przejmij rat leasingowych. Bezpieczne transakcje cesji leasingowych w całej Polsce.');
     }
+    trackPageView('home');
   }, []);
 
   useEffect(() => {

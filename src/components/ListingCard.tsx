@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star, Calendar, TrendingUp } from 'lucide-react';
 import { Listing } from '../lib/supabase';
+import { trackListingClick } from '../utils/analytics';
 
 type ListingCardProps = {
   listing: Listing;
@@ -12,9 +13,14 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
     ? listing.images[0]
     : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
 
+  const handleClick = () => {
+    trackListingClick(listing.id, 'card');
+    onView();
+  };
+
   return (
     <div
-      onClick={onView}
+      onClick={handleClick}
       className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.03] duration-300"
     >
       {listing.is_promoted && (

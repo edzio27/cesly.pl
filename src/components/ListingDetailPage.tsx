@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit, Share2, Check, X } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { trackPageView, trackListingClick } from '../utils/analytics';
 
 type ListingDetailPageProps = {
   listingId: string;
@@ -29,6 +30,8 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
 
   useEffect(() => {
     fetchListing();
+    trackPageView('listing', listingId);
+    trackListingClick(listingId, 'detail_view');
     if (user) {
       checkFavorite();
       addRecentView();

@@ -8,9 +8,10 @@ import AdminScrapingPage from './components/AdminScrapingPage';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import BulkImportPage from './components/BulkImportPage';
 import BookmarkletPage from './components/BookmarkletPage';
+import { AnalyticsPage } from './components/AnalyticsPage';
 import { Listing } from './lib/supabase';
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -25,10 +26,13 @@ function App() {
     if (path === '/reset-password' || (hash && hash.includes('type=recovery'))) {
       setCurrentPage('reset-password');
     } else if (path.startsWith('/listing/')) {
-      const id = path.split('/listing/')[1];
-      if (id) {
-        setSelectedListingId(id);
-        setCurrentPage('listing-detail');
+      const pathParts = path.split('/listing/');
+      if (pathParts.length > 1) {
+        const id = pathParts[1].split('?')[0];
+        if (id) {
+          setSelectedListingId(id);
+          setCurrentPage('listing-detail');
+        }
       }
     } else if (path === '/add') {
       setCurrentPage('add-listing');
@@ -40,6 +44,8 @@ function App() {
       setCurrentPage('bulk-import');
     } else if (path === '/facebook-import') {
       setCurrentPage('bookmarklet');
+    } else if (path === '/analytics') {
+      setCurrentPage('analytics');
     } else {
       setCurrentPage('home');
     }
@@ -50,10 +56,13 @@ function App() {
       if (newPath === '/reset-password' || (newHash && newHash.includes('type=recovery'))) {
         setCurrentPage('reset-password');
       } else if (newPath.startsWith('/listing/')) {
-        const id = newPath.split('/listing/')[1];
-        if (id) {
-          setSelectedListingId(id);
-          setCurrentPage('listing-detail');
+        const pathParts = newPath.split('/listing/');
+        if (pathParts.length > 1) {
+          const id = pathParts[1].split('?')[0];
+          if (id) {
+            setSelectedListingId(id);
+            setCurrentPage('listing-detail');
+          }
         }
       } else if (newPath === '/add') {
         setCurrentPage('add-listing');
@@ -65,6 +74,8 @@ function App() {
         setCurrentPage('bulk-import');
       } else if (newPath === '/facebook-import') {
         setCurrentPage('bookmarklet');
+      } else if (newPath === '/analytics') {
+        setCurrentPage('analytics');
       } else {
         setCurrentPage('home');
         setSelectedListingId(null);
@@ -84,6 +95,7 @@ function App() {
     else if (page === 'admin-scraping') url = '/admin-scraping';
     else if (page === 'bulk-import') url = '/bulk-import';
     else if (page === 'bookmarklet') url = '/facebook-import';
+    else if (page === 'analytics') url = '/analytics';
 
     window.history.pushState({}, '', url);
 
@@ -142,6 +154,8 @@ function App() {
       {currentPage === 'bulk-import' && <BulkImportPage />}
 
       {currentPage === 'bookmarklet' && <BookmarkletPage />}
+
+      {currentPage === 'analytics' && <AnalyticsPage />}
 
       {currentPage === 'reset-password' && <ResetPasswordPage />}
     </div>

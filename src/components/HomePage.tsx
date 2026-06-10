@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, TrendingUp, Shield, Users } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { trackPageView } from '../utils/analytics';
@@ -22,10 +22,14 @@ type Filters = {
   sortBy: string;
 };
 
+const ITEMS_PER_PAGE = 21;
+
 export function HomePage({ onViewListing }: HomePageProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<Filters>({
     vehicleType: '',
     brand: '',
@@ -40,6 +44,8 @@ export function HomePage({ onViewListing }: HomePageProps) {
     sortBy: 'newest',
   });
 
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
   useEffect(() => {
     document.title = 'Cesly.pl - Cesja leasingu, przejęcie umowy leasingowej | Ogłoszenia z całej Polski';
     const metaDesc = document.querySelector('meta[name="description"]');
@@ -51,12 +57,25 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
   useEffect(() => {
     fetchListings();
+  }, [filters, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [filters]);
 
   const fetchListings = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('listings').select('*');
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      let query = supabase.from('listings').select('*', { count: 'exact' });
 
       if (filters.vehicleType) {
         query = query.eq('vehicle_type', filters.vehicleType);
@@ -98,6 +117,8 @@ export function HomePage({ onViewListing }: HomePageProps) {
         query = query.lte('mileage', parseInt(filters.maxMileage));
       }
 
+      query = query.order('is_promoted', { ascending: false });
+
       switch (filters.sortBy) {
         case 'newest':
           query = query.order('updated_at', { ascending: false });
@@ -116,13 +137,14 @@ export function HomePage({ onViewListing }: HomePageProps) {
           break;
       }
 
-      const { data, error } = await query;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
-      const promoted = data?.filter((l) => l.is_promoted) || [];
-      const regular = data?.filter((l) => !l.is_promoted) || [];
-      setListings([...promoted, ...regular]);
+      setListings(data || []);
+      setTotalItems(count || 0);
     } catch (error) {
       console.error('Error fetching listings:', error);
     } finally {
@@ -132,6 +154,38 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const generatePageNumbers = (): (number | string)[] => {
+    const pages: (number | string)[] = [];
+    const showPages = 5;
+
+    if (totalPages <= showPages + 2) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      pages.push(totalPages);
+    }
+
+    return pages;
   };
 
   return (
@@ -389,7 +443,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
         </div>
       ) : (
         <>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Aktualne oferty przejęcia leasingu</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
+            <span className="text-sm text-gray-600">
+              {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => (
               <ListingCard
@@ -399,6 +458,48 @@ export function HomePage({ onViewListing }: HomePageProps) {
               />
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-10">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={18} />
+                Poprzednia
+              </button>
+
+              <div className="flex items-center gap-1">
+                {generatePageNumbers().map((page, idx) => (
+                  page === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="px-3 py-2 text-gray-500">...</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(Number(page))}
+                      className={`min-w-[44px] px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                        currentPage === page
+                          ? 'bg-amber-500 text-white shadow-md'
+                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Następna
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          )}
         </>
       )}
       </div>

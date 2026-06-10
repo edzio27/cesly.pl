@@ -30,11 +30,11 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
         </div>
       )}
 
-      <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
+      <div className="aspect-square w-full overflow-hidden bg-gray-100 relative">
         <img
           src={mainImage}
           alt={listing.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
         <div className="absolute bottom-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full">

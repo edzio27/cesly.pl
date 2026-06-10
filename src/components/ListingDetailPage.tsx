@@ -401,13 +401,13 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div>
               <div
-                className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden mb-4 cursor-zoom-in"
+                className="relative aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden mb-4 cursor-zoom-in"
                 onClick={() => openLightbox(currentImageIndex)}
               >
                 <img
                   src={images[currentImageIndex]}
                   alt={listing.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
 
                 {images.length > 1 && (
@@ -444,7 +444,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`aspect-video rounded overflow-hidden border-2 transition ${
+                      className={`aspect-square rounded overflow-hidden border-2 transition ${
                         currentImageIndex === idx
                           ? 'border-blue-600'
                           : 'border-gray-200 hover:border-gray-400'
@@ -610,11 +610,11 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
                           </div>
                         )}
 
-                        <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
+                        <div className="aspect-square w-full overflow-hidden bg-gray-100 relative">
                           <img
                             src={mainImage}
                             alt={suggestedListing.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
                           <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full">

@@ -196,69 +196,69 @@ export function HomePage({ onViewListing }: HomePageProps) {
         <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-amber-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6 text-center">
-          <div className="inline-block mb-3">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 text-center">
+          <div className="inline-block mb-4">
             <img
               src="/cesly_logo_fixed.png"
               alt="Cesly.pl"
-              className="h-12 md:h-16 mx-auto"
+              className="h-16 md:h-20 mx-auto"
             />
           </div>
-          <div className="space-y-2">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+          <div className="space-y-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               Największa baza cesji leasingów w Polsce
             </h1>
-            <div className="flex items-center justify-center gap-6 text-xs text-gray-600">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-amber-600" />
+            <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
                 <span className="font-semibold">+120 aktywnych ogłoszeń</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-amber-600" />
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-600" />
                 <span className="font-semibold">+500 użytkowników</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-8 h-8 bg-amber-100 rounded-full mb-1.5">
-              <TrendingUp className="w-4 h-4 text-amber-600" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
+              <TrendingUp className="w-5 h-5 text-amber-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-1">Największa oferta</h3>
-            <p className="text-[10px] text-gray-600">Tysiące aktywnych ogłoszeń cesji leasingu w jednym miejscu</p>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Największa oferta</h3>
+            <p className="text-xs text-gray-600">Tysiące aktywnych ogłoszeń cesji leasingu w jednym miejscu</p>
           </div>
 
-          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-8 h-8 bg-amber-100 rounded-full mb-1.5">
-              <Shield className="w-4 h-4 text-amber-600" />
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
+              <Shield className="w-5 h-5 text-amber-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-1">Bezpieczne transakcje</h3>
-            <p className="text-[10px] text-gray-600">Weryfikowane ogłoszenia i bezpieczny kontakt z właścicielami</p>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Bezpieczne transakcje</h3>
+            <p className="text-xs text-gray-600">Weryfikowane ogłoszenia i bezpieczny kontakt z właścicielami</p>
           </div>
 
-          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-8 h-8 bg-amber-100 rounded-full mb-1.5">
-              <Users className="w-4 h-4 text-amber-600" />
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
+              <Users className="w-5 h-5 text-amber-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-1">Sprawdzona społeczność</h3>
-            <p className="text-[10px] text-gray-600">Dołącz do setek zadowolonych użytkowników platformy</p>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Sprawdzona społeczność</h3>
+            <p className="text-xs text-gray-600">Dołącz do setek zadowolonych użytkowników platformy</p>
           </div>
         </div>
 
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg mb-6 border border-gray-200/50">
-        <div className="px-4 py-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg mb-8 border border-gray-200/50">
+        <div className="px-6 py-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Typ pojazdu
               </label>
               <select
                 value={filters.vehicleType}
                 onChange={(e) => handleFilterChange('vehicleType', e.target.value)}
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
               >
                 <option value="">Wszystkie</option>
                 <option value="samochód">Samochód</option>
@@ -269,7 +269,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Marka
               </label>
               <input
@@ -277,12 +277,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.brand}
                 onChange={(e) => handleFilterChange('brand', e.target.value)}
                 placeholder="np. BMW, Audi..."
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Model
               </label>
               <input
@@ -290,23 +290,23 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.model}
                 onChange={(e) => handleFilterChange('model', e.target.value)}
                 placeholder="np. X5, A4..."
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 mt-3 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 mt-4 transition-colors"
           >
             {showAdvancedFilters ? (
               <>
-                <ChevronUp className="w-3.5 h-3.5" />
+                <ChevronUp className="w-4 h-4" />
                 <span>Ukryj zaawansowane filtry</span>
               </>
             ) : (
               <>
-                <ChevronDown className="w-3.5 h-3.5" />
+                <ChevronDown className="w-4 h-4" />
                 <span>Pokaż zaawansowane filtry</span>
               </>
             )}
@@ -314,9 +314,9 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
           {showAdvancedFilters && (
             <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 pt-3 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Rata miesięczna (min)
               </label>
               <input
@@ -324,12 +324,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.minMonthlyPayment}
                 onChange={(e) => handleFilterChange('minMonthlyPayment', e.target.value)}
                 placeholder="Od"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Rata miesięczna (max)
               </label>
               <input
@@ -337,12 +337,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.maxMonthlyPayment}
                 onChange={(e) => handleFilterChange('maxMonthlyPayment', e.target.value)}
                 placeholder="Do"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Max. pozostałe raty
               </label>
               <input
@@ -350,18 +350,18 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.maxRemainingInstallments}
                 onChange={(e) => handleFilterChange('maxRemainingInstallments', e.target.value)}
                 placeholder="Bez limitu"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Sortowanie
               </label>
               <select
                 value={filters.sortBy}
                 onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
               >
                 <option value="newest">Najnowsze</option>
                 <option value="oldest">Najstarsze</option>
@@ -372,9 +372,9 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 mt-3 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 mt-3 border-t border-gray-200">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Min. odstępne (zł)
               </label>
               <input
@@ -382,12 +382,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.minTransferFee}
                 onChange={(e) => handleFilterChange('minTransferFee', e.target.value)}
                 placeholder="0"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Max. odstępne (zł)
               </label>
               <input
@@ -395,14 +395,14 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.maxTransferFee}
                 onChange={(e) => handleFilterChange('maxTransferFee', e.target.value)}
                 placeholder="Bez limitu"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 mt-3 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 mt-3 border-t border-gray-200">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Min. przebieg (km)
               </label>
               <input
@@ -410,12 +410,12 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.minMileage}
                 onChange={(e) => handleFilterChange('minMileage', e.target.value)}
                 placeholder="0"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Max. przebieg (km)
               </label>
               <input
@@ -423,7 +423,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
                 value={filters.maxMileage}
                 onChange={(e) => handleFilterChange('maxMileage', e.target.value)}
                 placeholder="Bez limitu"
-                className="w-full px-2.5 py-2 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
@@ -443,9 +443,9 @@ export function HomePage({ onViewListing }: HomePageProps) {
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
-            <span className="text-xs text-gray-600">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
+            <span className="text-sm text-gray-600">
               {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
             </span>
           </div>
@@ -460,25 +460,25 @@ export function HomePage({ onViewListing }: HomePageProps) {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1.5 mt-8">
+            <div className="flex items-center justify-center gap-2 mt-10">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={18} />
                 Poprzednia
               </button>
 
               <div className="flex items-center gap-1">
                 {generatePageNumbers().map((page, idx) => (
                   page === '...' ? (
-                    <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-500 text-xs">...</span>
+                    <span key={`ellipsis-${idx}`} className="px-3 py-2 text-gray-500">...</span>
                   ) : (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(Number(page))}
-                      className={`min-w-[32px] px-2 py-2 text-xs font-medium rounded-lg transition-colors ${
+                      className={`min-w-[44px] px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                         currentPage === page
                           ? 'bg-amber-500 text-white shadow-md'
                           : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
@@ -493,10 +493,10 @@ export function HomePage({ onViewListing }: HomePageProps) {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Następna
-                <ChevronRight size={14} />
+                <ChevronRight size={18} />
               </button>
             </div>
           )}

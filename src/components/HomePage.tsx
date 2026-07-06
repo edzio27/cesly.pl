@@ -121,7 +121,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
 
       switch (filters.sortBy) {
         case 'newest':
-          query = query.order('updated_at', { ascending: false });
+          query = query.order('created_at', { ascending: false });
           break;
         case 'oldest':
           query = query.order('created_at', { ascending: true });
@@ -449,7 +449,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
               {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {listings.map((listing) => (
               <ListingCard
                 key={listing.id}

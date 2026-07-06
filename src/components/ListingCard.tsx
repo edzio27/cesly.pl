@@ -37,7 +37,7 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
           className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
-        <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full">
+        <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center">
           <span className="text-amber-600 text-[10px] font-bold uppercase tracking-wide">
             {listing.vehicle_type}
           </span>

@@ -63,9 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
+    // Must NOT contain a "#" - Supabase appends its own #access_token=...&type=recovery
+    // fragment to this URL, and a URL can only have one hash. With the old
+    // ".../#/reset-password" value, the two fragments collided into a single
+    // malformed hash and the recovery token could never be parsed back out.
     const redirectUrl = window.location.hostname === 'localhost'
-      ? 'http://localhost:5173/#/reset-password'
-      : 'https://cesly.pl/#/reset-password';
+      ? `${window.location.origin}/reset-password`
+      : 'https://cesly.pl/reset-password';
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,

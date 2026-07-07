@@ -83,12 +83,15 @@ export function ProfilePage({ onViewListing, onApplySavedSearch }: ProfilePagePr
           .select('listing_id, viewed_at')
           .eq('user_id', user.id)
           .order('viewed_at', { ascending: false })
-          .limit(20);
+          .limit(50);
 
         if (viewError) throw viewError;
 
         if (recentViews && recentViews.length > 0) {
-          const listingIds = recentViews.map((v) => v.listing_id);
+          // Repeated views of the same listing each insert their own row
+          // (no unique constraint on recent_views), so dedupe here and
+          // keep the most recent viewing (the list is already newest-first).
+          const listingIds = [...new Set(recentViews.map((v) => v.listing_id))].slice(0, 20);
           const { data: listings, error: listError } = await supabase
             .from('listings')
             .select('*')
@@ -176,15 +179,15 @@ export function ProfilePage({ onViewListing, onApplySavedSearch }: ProfilePagePr
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-gray-200">
-          <div className="flex">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <div className="flex min-w-max">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition ${
+                  className={`flex-shrink-0 flex items-center justify-center space-x-2 px-6 py-4 font-medium whitespace-nowrap transition ${
                     activeTab === tab.id
                       ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                       : 'text-gray-600 hover:bg-gray-50'

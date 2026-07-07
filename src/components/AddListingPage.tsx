@@ -2,7 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, X, ImagePlus, Link } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { carBrands, carModels } from '../data/carData';
+import { carBrands, carModels, motorcycleBrands, motorcycleModels, boatBrands, boatModels } from '../data/carData';
+
+const BRANDS_BY_VEHICLE_TYPE: Record<string, string[]> = {
+  'samochód': carBrands,
+  'motocykl': motorcycleBrands,
+  'łódź': boatBrands,
+};
+
+const MODELS_BY_VEHICLE_TYPE: Record<string, Record<string, string[]>> = {
+  'samochód': carModels,
+  'motocykl': motorcycleModels,
+  'łódź': boatModels,
+};
 import { uploadImage, validateImageFile } from '../utils/imageUpload';
 
 type AddListingPageProps = {
@@ -132,10 +144,18 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    if (name === 'vehicleType') {
+      setFormData((prev) => ({ ...prev, vehicleType: value, brand: '', model: '' }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const availableModels = formData.brand ? carModels[formData.brand] || [] : [];
+  const isFreeTextVehicleType = formData.vehicleType === 'inne';
+  const availableBrands = BRANDS_BY_VEHICLE_TYPE[formData.vehicleType] || [];
+  const availableModels = formData.brand
+    ? (MODELS_BY_VEHICLE_TYPE[formData.vehicleType] || {})[formData.brand] || []
+    : [];
 
   const createImagePreview = (file: File): string => {
     return URL.createObjectURL(file);
@@ -732,48 +752,75 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
                 Marka *
               </label>
-              <select
-                id="brand"
-                name="brand"
-                required
-                value={formData.brand}
-                onChange={(e) => {
-                  handleChange(e);
-                  setFormData((prev) => ({ ...prev, model: '' }));
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Wybierz markę</option>
-                {carBrands.map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
+              {isFreeTextVehicleType ? (
+                <input
+                  id="brand"
+                  name="brand"
+                  type="text"
+                  required
+                  value={formData.brand}
+                  onChange={handleChange}
+                  placeholder="np. Segway, Can-Am..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              ) : (
+                <select
+                  id="brand"
+                  name="brand"
+                  required
+                  value={formData.brand}
+                  onChange={(e) => {
+                    handleChange(e);
+                    setFormData((prev) => ({ ...prev, model: '' }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Wybierz markę</option>
+                  {availableBrands.map((brand) => (
+                    <option key={brand} value={brand}>
+                      {brand}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
               <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
                 Model *
               </label>
-              <select
-                id="model"
-                name="model"
-                required
-                value={formData.model}
-                onChange={handleChange}
-                disabled={!formData.brand}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">
-                  {formData.brand ? 'Wybierz model' : 'Najpierw wybierz markę'}
-                </option>
-                {availableModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
+              {isFreeTextVehicleType || (formData.brand && availableModels.length === 0) ? (
+                <input
+                  id="model"
+                  name="model"
+                  type="text"
+                  required
+                  value={formData.model}
+                  onChange={handleChange}
+                  disabled={!isFreeTextVehicleType && !formData.brand}
+                  placeholder="np. wpisz model ręcznie"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+              ) : (
+                <select
+                  id="model"
+                  name="model"
+                  required
+                  value={formData.model}
+                  onChange={handleChange}
+                  disabled={!formData.brand}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {formData.brand ? 'Wybierz model' : 'Najpierw wybierz markę'}
                   </option>
-                ))}
-              </select>
+                  {availableModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 

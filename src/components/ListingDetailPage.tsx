@@ -3,6 +3,7 @@ import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, 
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { trackPageView, trackListingClick } from '../utils/analytics';
+import { calculateDealScore, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
 
 type ListingDetailPageProps = {
   listingId: string;
@@ -27,7 +28,63 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [suggestedListings, setSuggestedListings] = useState<Listing[]>([]);
+  const [messageText, setMessageText] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageSent, setMessageSent] = useState(false);
+  const [messageError, setMessageError] = useState('');
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('nieaktualne');
+  const [reportMessage, setReportMessage] = useState('');
+  const [sendingReport, setSendingReport] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
   const { user } = useAuth();
+
+  const handleSendMessage = async () => {
+    if (!listing || !user || !messageText.trim()) return;
+    setSendingMessage(true);
+    setMessageError('');
+    try {
+      const { error } = await supabase.from('messages').insert({
+        listing_id: listing.id,
+        sender_id: user.id,
+        recipient_id: listing.user_id,
+        body: messageText.trim(),
+      });
+      if (error) throw error;
+      setMessageText('');
+      setMessageSent(true);
+      setTimeout(() => setMessageSent(false), 4000);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setMessageError('Nie udało się wysłać wiadomości. Spróbuj ponownie.');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSendReport = async () => {
+    if (!listing) return;
+    setSendingReport(true);
+    try {
+      const { error } = await supabase.from('listing_reports').insert({
+        listing_id: listing.id,
+        reporter_id: user?.id || null,
+        reason: reportReason,
+        message: reportMessage.trim() || null,
+      });
+      if (error) throw error;
+      setReportSent(true);
+      setReportMessage('');
+      setTimeout(() => {
+        setReportSent(false);
+        setReportOpen(false);
+      }, 2500);
+    } catch (err) {
+      console.error('Error sending report:', err);
+    } finally {
+      setSendingReport(false);
+    }
+  };
 
   useEffect(() => {
     fetchListing();
@@ -575,7 +632,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                     </span>
                   </div>
 
-                  {listing.buyout_price && (
+                  {!!listing.buyout_price && (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 font-medium">Cena wykupu:</span>
                       <span className="text-xl font-bold text-gray-900">
@@ -594,17 +651,9 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
               </div>
 
               {(() => {
-                const mv = listing.market_value;
-                const rb = listing.remaining_balance;
-                if (!mv || !rb || mv <= 0) return null;
-                const gain = mv - rb - (listing.transfer_fee || 0);
-                const ratio = gain / mv;
-                const score = Math.min(10, Math.max(0, ratio * 10 + 5));
-                const scoreRounded = Math.round(score * 10) / 10;
-                const isGreat = scoreRounded >= 8;
-                const isGood = scoreRounded >= 6;
-                const colorClass = isGreat ? 'from-emerald-500 to-teal-500' : isGood ? 'from-amber-400 to-orange-400' : 'from-red-400 to-rose-500';
-                const label = isGreat ? 'Super okazja!' : isGood ? 'Dobra oferta' : 'Poniżej średniej';
+                const deal = calculateDealScore(listing);
+                if (!deal || deal.score <= 0) return null;
+                const gain = deal.marketValue - deal.totalCost;
                 return (
                   <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 mb-6 text-white shadow-xl">
                     <div className="flex items-center justify-between mb-4">
@@ -612,37 +661,29 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                         <TrendingUp size={18} className="text-emerald-400" />
                         <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Opłacalność cesji</span>
                       </div>
-                      <div className={`bg-gradient-to-br ${colorClass} px-3 py-1 rounded-lg flex items-center gap-1.5`}>
+                      <div className={`bg-gradient-to-br ${deal.colorClass} px-3 py-1 rounded-lg flex items-center gap-1.5`}>
                         <Star size={13} fill="currentColor" />
-                        <span className="text-sm font-black">{scoreRounded.toFixed(1)}/10</span>
-                        <span className="text-xs font-semibold">{label}</span>
+                        <span className="text-sm font-black">{deal.score.toFixed(1)}/10</span>
+                        <span className="text-xs font-semibold">{deal.label}</span>
                       </div>
                     </div>
                     <div className="space-y-2 text-sm mb-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Wartość rynkowa auta</span>
-                        <span className="font-semibold">{mv.toLocaleString('pl-PL')} zł</span>
+                        <span className="text-slate-400">Szacowana wartość rynkowa</span>
+                        <span className="font-semibold">{deal.marketValue.toLocaleString('pl-PL')} zł</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Pozostałe saldo leasingu</span>
-                        <span className="font-semibold text-red-300">− {rb.toLocaleString('pl-PL')} zł</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Odstępne</span>
-                        <span className="font-semibold text-red-300">− {listing.transfer_fee.toLocaleString('pl-PL')} zł</span>
+                        <span className="text-slate-400">Całkowity koszt przejęcia (odstępne + raty + wykup)</span>
+                        <span className="font-semibold text-red-300">− {deal.totalCost.toLocaleString('pl-PL')} zł</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-600">
-                        <span className="text-slate-300 font-medium">Twój zysk (vs. nowe auto)</span>
+                        <span className="text-slate-300 font-medium">Różnica</span>
                         <span className={`text-lg font-black ${gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                           {gain >= 0 ? '+' : ''}{gain.toLocaleString('pl-PL')} zł
                         </span>
                       </div>
                     </div>
-                    {gain > 0 && (
-                      <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg px-3 py-2 text-xs text-emerald-300 font-medium">
-                        Ta cesja jest o {gain.toLocaleString('pl-PL')} zł korzystniejsza niż leasing nowego auta tego modelu.
-                      </div>
-                    )}
+                    <p className="text-xs text-slate-400 leading-relaxed">{DEAL_SCORE_EXPLANATION}</p>
                   </div>
                 );
               })()}
@@ -677,10 +718,95 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                 </div>
               )}
 
-              <div className="flex items-center text-sm text-gray-500">
-                <Calendar size={16} className="mr-2" />
-                Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
+              {user && listing.user_id !== user.id && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">Napisz wiadomość</h2>
+                  {messageSent ? (
+                    <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                      Wiadomość wysłana. Odpowiedź znajdziesz w swoim profilu, w zakładce "Wiadomości".
+                    </p>
+                  ) : (
+                    <>
+                      <textarea
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        placeholder="Napisz wiadomość do właściciela ogłoszenia..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      {messageError && <p className="text-xs text-red-600 mt-1">{messageError}</p>}
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={sendingMessage || !messageText.trim()}
+                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {sendingMessage ? 'Wysyłanie...' : 'Wyślij wiadomość'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                <div className="flex items-center">
+                  <Calendar size={16} className="mr-2" />
+                  Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
+                </div>
+                <button
+                  onClick={() => setReportOpen(true)}
+                  className="text-gray-400 hover:text-red-600 underline transition-colors"
+                >
+                  Zgłoś ogłoszenie
+                </button>
               </div>
+
+              {reportOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
+                  <div className="bg-white rounded-lg p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Zgłoś ogłoszenie</h3>
+                    {reportSent ? (
+                      <p className="text-sm text-emerald-700">Dziękujemy za zgłoszenie. Sprawdzimy je jak najszybciej.</p>
+                    ) : (
+                      <>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Powód</label>
+                        <select
+                          value={reportReason}
+                          onChange={(e) => setReportReason(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-3"
+                        >
+                          <option value="nieaktualne">Ogłoszenie nieaktualne</option>
+                          <option value="oszustwo">Podejrzenie oszustwa</option>
+                          <option value="nieprawdziwe_dane">Nieprawdziwe dane / cena</option>
+                          <option value="duplikat">Duplikat ogłoszenia</option>
+                          <option value="inne">Inne</option>
+                        </select>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Dodatkowe informacje (opcjonalnie)</label>
+                        <textarea
+                          value={reportMessage}
+                          onChange={(e) => setReportMessage(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-4"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => setReportOpen(false)}
+                            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                          >
+                            Anuluj
+                          </button>
+                          <button
+                            onClick={handleSendReport}
+                            disabled={sendingReport}
+                            className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                          >
+                            {sendingReport ? 'Wysyłanie...' : 'Zgłoś'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

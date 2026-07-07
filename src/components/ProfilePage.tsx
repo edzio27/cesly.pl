@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { User, FileText, Heart, Clock, Trash2, File as FileEdit } from 'lucide-react';
+import { User, FileText, Heart, Clock, Trash2, File as FileEdit, MessageCircle, Bookmark } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ListingCard } from './ListingCard';
+import { MessagesPanel } from './MessagesPanel';
+import { SavedSearchesPanel } from './SavedSearchesPanel';
 
 type ProfilePageProps = {
   onViewListing: (id: string) => void;
+  onApplySavedSearch?: (filters: Record<string, string>) => void;
 };
 
-type Tab = 'my-listings' | 'drafts' | 'favorites' | 'recent';
+type Tab = 'my-listings' | 'drafts' | 'favorites' | 'recent' | 'messages' | 'saved-searches';
 
-export function ProfilePage({ onViewListing }: ProfilePageProps) {
+export function ProfilePage({ onViewListing, onApplySavedSearch }: ProfilePageProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('my-listings');
   const [myListings, setMyListings] = useState<Listing[]>([]);
@@ -27,6 +30,10 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
 
   const fetchData = async () => {
     if (!user) return;
+    if (activeTab === 'messages' || activeTab === 'saved-searches') {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -135,6 +142,8 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
     { id: 'drafts' as Tab, label: 'Szkice', icon: FileEdit },
     { id: 'favorites' as Tab, label: 'Ulubione', icon: Heart },
     { id: 'recent' as Tab, label: 'Ostatnio oglądane', icon: Clock },
+    { id: 'messages' as Tab, label: 'Wiadomości', icon: MessageCircle },
+    { id: 'saved-searches' as Tab, label: 'Zapisane wyszukiwania', icon: Bookmark },
   ];
 
   const getCurrentListings = () => {
@@ -190,7 +199,11 @@ export function ProfilePage({ onViewListing }: ProfilePageProps) {
         </div>
 
         <div className="p-6">
-          {loading ? (
+          {activeTab === 'messages' ? (
+            <MessagesPanel userId={user.id} onViewListing={onViewListing} />
+          ) : activeTab === 'saved-searches' ? (
+            <SavedSearchesPanel userId={user.id} onApplySearch={onApplySavedSearch} />
+          ) : loading ? (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               <p className="mt-4 text-gray-600">Ładowanie...</p>

@@ -105,3 +105,79 @@ export const carModels: Record<string, string[]> = {
   'Abarth': ['500', '595', '695'],
   'Daewoo': ['Lanos', 'Matiz', 'Nexia', 'Nubira', 'Leganza'],
 };
+
+export const motorcycleBrands = [
+  'Aprilia',
+  'Benelli',
+  'BMW Motorrad',
+  'CFMOTO',
+  'Ducati',
+  'Harley-Davidson',
+  'Honda',
+  'Husqvarna',
+  'Kawasaki',
+  'KTM',
+  'Kymco',
+  'Moto Guzzi',
+  'MV Agusta',
+  'Piaggio',
+  'Royal Enfield',
+  'Suzuki',
+  'Triumph',
+  'Vespa',
+  'Yamaha',
+  'Zero Motorcycles',
+];
+
+export const motorcycleModels: Record<string, string[]> = {
+  'Honda': ['CB500F', 'CB650R', 'CBR500R', 'CBR650R', 'CBR1000RR', 'Africa Twin', 'Rebel 500', 'Forza 350', 'PCX 125', 'Gold Wing'],
+  'Yamaha': ['MT-03', 'MT-07', 'MT-09', 'MT-10', 'YZF-R3', 'YZF-R7', 'YZF-R1', 'Tenere 700', 'Tracer 9', 'XMAX 300', 'NMAX 125'],
+  'Kawasaki': ['Ninja 400', 'Ninja 650', 'Ninja ZX-6R', 'Ninja ZX-10R', 'Z400', 'Z650', 'Z900', 'Versys 650', 'Versys 1000'],
+  'Suzuki': ['GSX-S750', 'GSX-S1000', 'GSX-R600', 'GSX-R750', 'GSX-R1000', 'V-Strom 650', 'V-Strom 1050', 'Burgman 400'],
+  'BMW Motorrad': ['G 310 R', 'F 750 GS', 'F 850 GS', 'R 1250 GS', 'R 1250 GS Adventure', 'S 1000 RR', 'S 1000 XR', 'R nineT'],
+  'Ducati': ['Monster', 'Panigale V2', 'Panigale V4', 'Multistrada V2', 'Multistrada V4', 'Diavel', 'Scrambler', 'Streetfighter V4'],
+  'KTM': ['Duke 125', 'Duke 390', 'Duke 790', 'Duke 890', 'Duke 1290', 'Adventure 390', 'Adventure 890', 'Adventure 1290'],
+  'Triumph': ['Street Triple', 'Speed Triple', 'Tiger 900', 'Tiger 1200', 'Bonneville T100', 'Bonneville T120', 'Trident 660'],
+  'Harley-Davidson': ['Iron 883', 'Forty-Eight', 'Street Bob', 'Fat Bob', 'Road King', 'Street Glide', 'Fat Boy', 'Pan America'],
+  'Piaggio': ['Liberty 125', 'Medley 125', 'MP3 300', 'Beverly 300'],
+  'Vespa': ['Primavera', 'Sprint', 'GTS 300'],
+  'Aprilia': ['RS 660', 'Tuono 660', 'Tuono V4', 'RSV4', 'Tuareg 660'],
+  'Husqvarna': ['Svartpilen 401', 'Vitpilen 401', 'Norden 901'],
+};
+
+export const boatBrands = [
+  'Antares',
+  'Bayliner',
+  'Beneteau',
+  'Bombard',
+  'Cobra Nautique',
+  'Four Winns',
+  'Galeon',
+  'Galia',
+  'Jeanneau',
+  'Karnic',
+  'Mercury',
+  'Parker Poland',
+  'Quicksilver',
+  'Rinker',
+  'Sea Ray',
+  'Selva Marine',
+  'Wellcraft',
+  'Yamaha',
+  'Zodiac',
+];
+
+export const boatModels: Record<string, string[]> = {
+  'Bayliner': ['VR4', 'VR5', 'VR6', 'Element E16', 'Element E18', 'Ciera 8'],
+  'Quicksilver': ['Activ 605', 'Activ 675', 'Activ 755', 'Captur 6.55'],
+  'Galia': ['300', '330', '365', '400', '450'],
+  'Galeon': ['300', '325 GTO', '385 HTS', '400 Fly', '470 Skydeck'],
+  'Sea Ray': ['SPX 190', 'SPX 210', 'SDX 250', 'SLX 350'],
+  'Jeanneau': ['Cap Camarat 6.5', 'Cap Camarat 7.5', 'Merry Fisher 795'],
+  'Parker Poland': ['P590', 'P660', 'P750', 'P790 Weekend'],
+  'Mercury': ['Ballistic 550', 'Activ 555', 'Activ 605'],
+  'Yamaha': ['SR190', 'SR210', 'AR195', 'FSH Sport'],
+};
+
+export const otherVehicleBrands = ['Inne'];
+

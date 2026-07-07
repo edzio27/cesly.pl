@@ -48,3 +48,13 @@ export type RecentView = {
   listing_id: string;
   viewed_at: string;
 };
+
+export type Message = {
+  id: string;
+  listing_id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+};

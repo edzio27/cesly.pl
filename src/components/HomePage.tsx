@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check, Bookmark } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { trackPageView } from '../utils/analytics';
+import { useAuth } from '../contexts/AuthContext';
 
 type HomePageProps = {
   onViewListing: (id: string) => void;
+  initialFilters?: Partial<Filters>;
 };
 
-type Filters = {
+export type Filters = {
   vehicleType: string;
   brand: string;
   model: string;
@@ -25,6 +27,14 @@ type Filters = {
 const ITEMS_PER_PAGE = 21;
 
 const POPULAR_BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Škoda', 'Toyota', 'Kia', 'Volvo'];
+
+const PRICE_RANGE_PRESETS: { label: string; min: string; max: string }[] = [
+  { label: 'do 500 zł', min: '', max: '500' },
+  { label: '500-1000 zł', min: '500', max: '1000' },
+  { label: '1000-2000 zł', min: '1000', max: '2000' },
+  { label: '2000-3000 zł', min: '2000', max: '3000' },
+  { label: '3000 zł i więcej', min: '3000', max: '' },
+];
 
 const FAQ_ITEMS = [
   {
@@ -100,12 +110,15 @@ function FaqSection() {
   );
 }
 
-export function HomePage({ onViewListing }: HomePageProps) {
+export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
+  const { user } = useAuth();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [savingSearch, setSavingSearch] = useState(false);
+  const [searchSaved, setSearchSaved] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     vehicleType: '',
     brand: '',
@@ -118,6 +131,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
     minMileage: '',
     maxMileage: '',
     sortBy: 'newest',
+    ...initialFilters,
   });
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -263,6 +277,28 @@ export function HomePage({ onViewListing }: HomePageProps) {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleSaveSearch = async () => {
+    if (!user) return;
+    const name = window.prompt('Nazwa zapisanego wyszukiwania:', [filters.brand, filters.model, filters.vehicleType].filter(Boolean).join(' ') || 'Moje wyszukiwanie');
+    if (!name) return;
+
+    setSavingSearch(true);
+    try {
+      const { error } = await supabase.from('saved_searches').insert({
+        user_id: user.id,
+        name,
+        filters,
+      });
+      if (error) throw error;
+      setSearchSaved(true);
+      setTimeout(() => setSearchSaved(false), 2500);
+    } catch (error) {
+      console.error('Error saving search:', error);
+    } finally {
+      setSavingSearch(false);
+    }
+  };
+
   const generatePageNumbers = (): (number | string)[] => {
     const pages: (number | string)[] = [];
     const showPages = 5;
@@ -329,7 +365,23 @@ export function HomePage({ onViewListing }: HomePageProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {/* Compact strip on mobile so search + listings aren't pushed below the fold */}
+        <div className="md:hidden flex items-center justify-around bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 mb-6 text-center">
+          <div className="flex flex-col items-center gap-1 px-1">
+            <TrendingUp className="w-5 h-5 text-amber-600" />
+            <span className="text-[10px] font-medium text-gray-700">Największa oferta</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 px-1">
+            <Shield className="w-5 h-5 text-amber-600" />
+            <span className="text-[10px] font-medium text-gray-700">Bezpieczny kontakt</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 px-1">
+            <Users className="w-5 h-5 text-amber-600" />
+            <span className="text-[10px] font-medium text-gray-700">Aktywna społeczność</span>
+          </div>
+        </div>
+
+        <div className="hidden md:grid md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
             <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
               <TrendingUp className="w-5 h-5 text-amber-600" />
@@ -343,7 +395,7 @@ export function HomePage({ onViewListing }: HomePageProps) {
               <Shield className="w-5 h-5 text-amber-600" />
             </div>
             <h3 className="font-semibold text-gray-900 mb-1.5">Bezpieczne transakcje</h3>
-            <p className="text-xs text-gray-600">Weryfikowane ogłoszenia i bezpieczny kontakt z właścicielami</p>
+            <p className="text-xs text-gray-600">Bezpośredni kontakt z właścicielem, wiadomości w serwisie i możliwość zgłoszenia nieprawidłowego ogłoszenia</p>
           </div>
 
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
@@ -402,22 +454,63 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 mt-4 transition-colors"
-          >
-            {showAdvancedFilters ? (
-              <>
-                <ChevronUp className="w-4 h-4" />
-                <span>Ukryj zaawansowane filtry</span>
-              </>
-            ) : (
-              <>
-                <ChevronDown className="w-4 h-4" />
-                <span>Pokaż zaawansowane filtry</span>
-              </>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <label className="block text-xs font-semibold text-gray-700 mb-2">
+              Rata miesięczna — szybki wybór
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {PRICE_RANGE_PRESETS.map((preset) => {
+                const isActive = filters.minMonthlyPayment === preset.min && filters.maxMonthlyPayment === preset.max;
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      handleFilterChange('minMonthlyPayment', isActive ? '' : preset.min);
+                      handleFilterChange('maxMonthlyPayment', isActive ? '' : preset.max);
+                    }}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                      isActive
+                        ? 'bg-amber-500 border-amber-500 text-white'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-amber-400 hover:text-amber-700'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
+            >
+              {showAdvancedFilters ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  <span>Ukryj zaawansowane filtry</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  <span>Pokaż zaawansowane filtry</span>
+                </>
+              )}
+            </button>
+
+            {user && (
+              <button
+                onClick={handleSaveSearch}
+                disabled={savingSearch}
+                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-amber-700 transition-colors disabled:opacity-50"
+              >
+                <Bookmark className="w-4 h-4" />
+                <span>{searchSaved ? 'Zapisano!' : 'Zapisz to wyszukiwanie'}</span>
+              </button>
             )}
-          </button>
+          </div>
 
           {showAdvancedFilters && (
             <>

@@ -46,6 +46,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
+  const [pendingHomeFilters, setPendingHomeFilters] = useState<Record<string, string> | undefined>(undefined);
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -158,11 +159,17 @@ function App() {
     window.history.pushState({}, '', '/profile');
   };
 
+  const handleApplySavedSearch = (filters: Record<string, string>) => {
+    setPendingHomeFilters(filters);
+    setCurrentPage('home');
+    window.history.pushState({}, '', '/');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
 
-      {currentPage === 'home' && <HomePage onViewListing={handleViewListing} />}
+      {currentPage === 'home' && <HomePage onViewListing={handleViewListing} initialFilters={pendingHomeFilters} />}
 
       {currentPage === 'listing-detail' && selectedListingId && (
         <ListingDetailPage
@@ -182,7 +189,9 @@ function App() {
           />
         )}
 
-        {currentPage === 'profile' && <ProfilePage onViewListing={handleViewListing} />}
+        {currentPage === 'profile' && (
+          <ProfilePage onViewListing={handleViewListing} onApplySavedSearch={handleApplySavedSearch} />
+        )}
 
         {currentPage === 'admin-scraping' && <AdminScrapingPage />}
 

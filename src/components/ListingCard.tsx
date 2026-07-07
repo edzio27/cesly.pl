@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, Calendar, TrendingUp } from 'lucide-react';
 import { Listing } from '../lib/supabase';
 import { trackListingClick } from '../utils/analytics';
+import { calculateDealScore, DEAL_SCORE_EXPLANATION, DealScoreBreakdown } from '../utils/dealScore';
 
 type ListingCardProps = {
   listing: Listing;
@@ -9,24 +10,14 @@ type ListingCardProps = {
   priority?: boolean;
 };
 
-function calcDealScore(listing: Listing): number | null {
-  const { market_value, monthly_payment, transfer_fee, remaining_installments, buyout_price } = listing;
-  if (!market_value || market_value <= 0 || !monthly_payment) return null;
-  const totalCost = (transfer_fee || 0) + monthly_payment * remaining_installments + (buyout_price || 0);
-  const ratio = (market_value - totalCost) / market_value;
-  // ratio > 0 → płacisz mniej niż wartość rynkowa (okazja)
-  // ratio < 0 → przepłacasz
-  const score = Math.min(10, Math.max(0, ratio * 20 + 5));
-  return Math.round(score * 10) / 10;
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  const color = score >= 8 ? 'from-emerald-500 to-teal-500' : score >= 6 ? 'from-amber-400 to-orange-400' : 'from-red-400 to-rose-500';
-  const label = score >= 8 ? 'Super okazja' : score >= 6 ? 'Dobra oferta' : 'Sprawdź';
+function ScoreBadge({ deal }: { deal: DealScoreBreakdown }) {
   return (
-    <div className={`absolute top-2 right-2 bg-gradient-to-br ${color} text-white rounded-lg px-2 py-1 shadow-lg`}>
-      <div className="text-[11px] font-black leading-none">{score.toFixed(1)}/10</div>
-      <div className="text-[8px] font-semibold uppercase tracking-wide leading-none mt-0.5">{label}</div>
+    <div
+      title={DEAL_SCORE_EXPLANATION}
+      className={`absolute top-2 right-2 bg-gradient-to-br ${deal.colorClass} text-white rounded-lg px-2 py-1 shadow-lg cursor-help`}
+    >
+      <div className="text-[11px] font-black leading-none">{deal.score.toFixed(1)}/10</div>
+      <div className="text-[8px] font-semibold uppercase tracking-wide leading-none mt-0.5">{deal.label}</div>
     </div>
   );
 }
@@ -53,6 +44,8 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
   const mainImage = listing.images && listing.images.length > 0
     ? listing.images[0]
     : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
+
+  const deal = calculateDealScore(listing);
 
   const handleClick = (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
@@ -89,7 +82,7 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
             {listing.vehicle_type}
           </span>
         </div>
-        {(() => { const s = calcDealScore(listing); return s !== null && s > 0 ? <ScoreBadge score={s} /> : null; })()}
+        {deal && deal.score > 0 && <ScoreBadge deal={deal} />}
       </div>
 
       <div className="p-3">
@@ -112,7 +105,7 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
             </span>
           </div>
 
-          {listing.buyout_price && (
+          {!!listing.buyout_price && (
             <div className="flex justify-between text-xs">
               <span className="text-gray-600">Wykup:</span>
               <span className="font-semibold text-gray-900">
@@ -128,7 +121,7 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
             </span>
           </div>
 
-          {listing.mileage && (
+          {listing.mileage != null && (
             <div className="flex justify-between text-xs">
               <span className="text-gray-600">Przebieg:</span>
               <span className="font-semibold text-gray-900">
@@ -143,7 +136,7 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
             <Calendar size={12} className="mr-1" />
             {new Date(listing.created_at).toLocaleDateString('pl-PL')}
           </div>
-          {(() => { const s = calcDealScore(listing); return s !== null && s > 0 ? <StarRating score={s} /> : null; })()}
+          {deal && deal.score > 0 && <StarRating score={deal.score} />}
         </div>
       </div>
     </a>

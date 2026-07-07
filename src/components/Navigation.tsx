@@ -56,72 +56,62 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                 <span>Dodaj ogłoszenie za darmo</span>
               </button>
 
-              {user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowDesktopMenu(!showDesktopMenu)}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-                  >
-                    <User size={20} />
-                    <span className="font-medium">Moje konto</span>
-                  </button>
-
-                  {showDesktopMenu && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowDesktopMenu(false)}
-                      />
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                        <button
-                          onClick={() => { handleNavigate('profile'); setShowDesktopMenu(false); }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                        >
-                          <User size={18} />
-                          <span>Mój profil</span>
-                        </button>
-                        <button
-                          onClick={() => { handleNavigate('bulk-import'); setShowDesktopMenu(false); }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                        >
-                          <Upload size={18} />
-                          <span>Masowy import</span>
-                        </button>
-                        <button
-                          onClick={() => { handleNavigate('admin-scraping'); setShowDesktopMenu(false); }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                        >
-                          <Settings size={18} />
-                          <span>Admin</span>
-                        </button>
-                        <button
-                          onClick={() => { handleNavigate('analytics'); setShowDesktopMenu(false); }}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                        >
-                          <BarChart3 size={18} />
-                          <span>Statystyki</span>
-                        </button>
-                        <div className="border-t border-gray-200 my-1" />
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition"
-                        >
-                          <LogOut size={18} />
-                          <span>Wyloguj</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
+              <div className="relative">
                 <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium"
+                  onClick={() => user ? setShowDesktopMenu(!showDesktopMenu) : setShowAuthModal(true)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
                 >
                   <User size={20} />
-                  <span>Zaloguj się</span>
+                  <span className="font-medium">Moje konto</span>
                 </button>
-              )}
+
+                {user && showDesktopMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowDesktopMenu(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                      <button
+                        onClick={() => { handleNavigate('profile'); setShowDesktopMenu(false); }}
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        <User size={18} />
+                        <span>Mój profil</span>
+                      </button>
+                      <button
+                        onClick={() => { handleNavigate('bulk-import'); setShowDesktopMenu(false); }}
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        <Upload size={18} />
+                        <span>Masowy import</span>
+                      </button>
+                      <button
+                        onClick={() => { handleNavigate('admin-scraping'); setShowDesktopMenu(false); }}
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        <Settings size={18} />
+                        <span>Admin</span>
+                      </button>
+                      <button
+                        onClick={() => { handleNavigate('analytics'); setShowDesktopMenu(false); }}
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        <BarChart3 size={18} />
+                        <span>Statystyki</span>
+                      </button>
+                      <div className="border-t border-gray-200 my-1" />
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition"
+                      >
+                        <LogOut size={18} />
+                        <span>Wyloguj</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             <button

@@ -53,15 +53,18 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
     ? listing.images[0]
     : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
     trackListingClick(listing.id, 'card');
     onView();
   };
 
   return (
-    <div
+    <a
+      href={`/listing/${listing.id}`}
       onClick={handleClick}
-      className="group bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300"
+      className="group block bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300"
     >
       {listing.is_promoted && (
         <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-2 py-1 text-xs font-bold flex items-center">
@@ -139,6 +142,6 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
           {(() => { const s = calcDealScore(listing); return s !== null && s > 0 ? <StarRating score={s} /> : null; })()}
         </div>
       </div>
-    </div>
+    </a>
   );
 }

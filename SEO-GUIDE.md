@@ -22,13 +22,33 @@
 - ✅ robots.txt z dostępem dla wszystkich crawlerów AI (GPTBot, ClaudeBot, PerplexityBot, YouBot, etc.)
 - ✅ Dynamiczny sitemap.xml generowany automatycznie z bazy danych
 - ✅ Sitemap dostępny pod: https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/sitemap
+- ✅ `https://cesly.pl/sitemap.xml` przekierowuje (rewrite w `vercel.json`) do tej samej dynamicznej funkcji —
+  usunięto statyczny plik `public/sitemap.xml`, który zawierał wyłącznie stronę główną i był sprzeczny z tym,
+  co widział crawler wczytujący sitemap z `robots.txt`.
+
+### 3b. Renderowanie treści dla botów bez JS (naprawione)
+Aplikacja to SPA (Vite + React) — treść ogłoszeń ładuje się dopiero po wykonaniu JS. GPTBot, ClaudeBot,
+PerplexityBot i w dużej mierze Bingbot nie wykonują JS, więc bez dodatkowej obsługi nigdy nie zobaczyłyby
+realnej treści strony ogłoszenia (opis, cena, przebieg, zdjęcia).
+
+Rozwiązanie:
+- `vercel.json` rewrite'uje żądania `/listing/:id` do funkcji Supabase `og-meta` **tylko wtedy, gdy nagłówek
+  `User-Agent` pasuje do listy botów** (warunek `has`). Zwykli użytkownicy trafiają normalnie do `index.html`
+  i aplikacji React (ścieżka `/listing/:id` jest tam poprawnie parsowana).
+- Funkcja `og-meta` renderuje pełną, statyczną treść ogłoszenia (tytuł, cenę, tabelę parametrów, galerię
+  zdjęć, pełny opis) razem ze structured data `Product`, zamiast — jak wcześniej — przekierowywać każdego
+  (także realnych użytkowników) na zepsuty adres z hashem (`#/listing/{id}`), którego aplikacja nigdy nie
+  parsowała. To wcześniej powodowało, że każdy udostępniony link do ogłoszenia lądował realnemu użytkownikowi
+  na stronie głównej zamiast na ogłoszeniu.
+- Usunięto martwy plik `public/listing.html` (nieużywany, zastąpiony przez powyższy mechanizm).
 
 ### 4. Treści SEO
 - ✅ Sekcja H1 z frazami kluczowymi na stronie głównej
 - ✅ Naturalne użycie fraz: "cesja leasingu", "przejęcie umowy leasingowej", "odstąpienie leasingu"
-- ✅ Sekcja edukacyjna wyjaśniająca czym jest cesja leasingu
+- ✅ Sekcja edukacyjna wyjaśniająca czym jest cesja leasingu (`HomePage.tsx`, sekcja "Czym jest cesja leasingu?")
 - ✅ Lista korzyści z przejęcia leasingu
-- ✅ Sekcja "popularne wyszukiwania" z dodatkowymi frazami
+- ✅ Sekcja "popularne wyszukiwania" z klikalnymi frazami (filtrują listę po marce)
+- ✅ FAQ ze structured data `FAQPage` (schema.org)
 
 ### 5. Optymalizacja techniczna
 - ✅ Semantyczne nagłówki (H1, H2, H3)

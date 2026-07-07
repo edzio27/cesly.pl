@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { trackPageView } from '../utils/analytics';
@@ -23,6 +23,82 @@ type Filters = {
 };
 
 const ITEMS_PER_PAGE = 21;
+
+const POPULAR_BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Škoda', 'Toyota', 'Kia', 'Volvo'];
+
+const FAQ_ITEMS = [
+  {
+    question: 'Czym jest cesja leasingu?',
+    answer: 'Cesja leasingu (przejęcie umowy leasingowej) to przeniesienie praw i obowiązków z dotychczasowego leasingobiorcy (cedenta) na nowego użytkownika (cesjonariusza). Nowa osoba przejmuje pozostałe raty leasingowe oraz prawo do korzystania z pojazdu, a leasingodawca musi wyrazić zgodę na taką zmianę.',
+  },
+  {
+    question: 'Ile kosztuje cesja leasingu?',
+    answer: 'Na koszt cesji składają się dwa elementy: odstępne płacone dotychczasowemu leasingobiorcy (ustalane indywidualnie między stronami, widoczne w każdym ogłoszeniu) oraz opłata manipulacyjna pobierana przez leasingodawcę za przepisanie umowy, zwykle w wysokości kilkuset złotych.',
+  },
+  {
+    question: 'Czy cesja leasingu wymaga zgody leasingodawcy?',
+    answer: 'Tak. Firma leasingowa musi zweryfikować nowego leasingobiorcę (m.in. jego zdolność finansową) i formalnie wyrazić zgodę na przeniesienie umowy, zanim cesja zostanie sfinalizowana.',
+  },
+  {
+    question: 'Jakie dokumenty są potrzebne do przejęcia leasingu?',
+    answer: 'Zazwyczaj wymagany jest wniosek o cesję złożony do leasingodawcy, dokumenty potwierdzające sytuację finansową nowego leasingobiorcy (np. dla firm: dokumenty rejestrowe i finansowe), a po akceptacji — aneks do umowy leasingowej podpisywany przez wszystkie trzy strony.',
+  },
+  {
+    question: 'Czy przejęcie leasingu to dobry sposób na tańszy samochód?',
+    answer: 'Często tak — przejmując leasing, płacisz tylko pozostałe raty i odstępne, a nie pełną wartość pojazdu, co przy dobrze dobranej ofercie bywa tańsze niż zakup podobnego auta na rynku wtórnym lub zawarcie nowej umowy leasingowej.',
+  },
+];
+
+function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const structuredData = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQ_ITEMS.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    };
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'faq-structured-data';
+    script.textContent = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+
+    return () => {
+      document.getElementById('faq-structured-data')?.remove();
+    };
+  }, []);
+
+  return (
+    <div className="space-y-2">
+      {FAQ_ITEMS.map((item, index) => {
+        const isOpen = openIndex === index;
+        return (
+          <div key={item.question} className="bg-white/80 rounded-xl border border-gray-200/50 overflow-hidden">
+            <button
+              onClick={() => setOpenIndex(isOpen ? null : index)}
+              className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+            >
+              <span className="font-semibold text-gray-900">{item.question}</span>
+              {isOpen ? <ChevronUp className="w-4 h-4 text-amber-600 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-amber-600 flex-shrink-0" />}
+            </button>
+            {isOpen && (
+              <p className="px-5 pb-4 text-sm text-gray-700 leading-relaxed">{item.answer}</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function HomePage({ onViewListing }: HomePageProps) {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -502,6 +578,45 @@ export function HomePage({ onViewListing }: HomePageProps) {
           )}
         </>
       )}
+
+      <div className="mt-16 space-y-12">
+        <section className="bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 md:p-8">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">Czym jest cesja leasingu?</h2>
+          <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+            Cesja leasingu, nazywana też przejęciem umowy leasingowej lub odstąpieniem leasingu, polega na przeniesieniu
+            praw i obowiązków z obecnego leasingobiorcy na nowego użytkownika. Cedent (osoba oddająca leasing) kończy
+            spłacanie rat, a cesjonariusz (osoba przejmująca) wchodzi w jego miejsce — przejmuje pozostałe raty
+            leasingowe oraz pojazd, płacąc cedentowi ustalone odstępne. Cała transakcja wymaga zgody leasingodawcy.
+          </p>
+          <h3 className="text-base font-semibold text-gray-900 mb-2">Korzyści z przejęcia leasingu</h3>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
+            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Krótszy okres zobowiązania niż przy nowej umowie leasingowej</span></li>
+            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Możliwość przejęcia pojazdu poniżej jego wartości rynkowej</span></li>
+            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Uproszczona procedura w porównaniu z zakupem i nowym leasingiem</span></li>
+            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Znana historia serwisowa i przebieg pojazdu od dotychczasowego użytkownika</span></li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Popularne wyszukiwania</h2>
+          <div className="flex flex-wrap gap-2">
+            {POPULAR_BRANDS.map((brand) => (
+              <button
+                key={brand}
+                onClick={() => handleFilterChange('brand', brand)}
+                className="px-4 py-2 text-sm font-medium bg-white/80 border border-gray-300 rounded-full text-gray-700 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700 transition-colors"
+              >
+                Cesja leasingu {brand}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Najczęściej zadawane pytania</h2>
+          <FaqSection />
+        </section>
+      </div>
       </div>
     </div>
   );

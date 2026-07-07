@@ -13,6 +13,18 @@ import { Listing } from './lib/supabase';
 
 type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics';
 
+// Legacy/CDN-cached crawler redirects may still point at the hash form
+// (#/listing/{id}) instead of the real path. Accept both so no visitor
+// coming from an old cached link ends up stranded on the homepage.
+function parseListingId(path: string, hash: string): string | null {
+  if (path.startsWith('/listing/')) {
+    const id = path.split('/listing/')[1]?.split('?')[0];
+    return id || null;
+  }
+  const hashMatch = hash.match(/^#\/listing\/([^/?]+)/);
+  return hashMatch ? hashMatch[1] : null;
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
@@ -25,14 +37,11 @@ function App() {
 
     if (path === '/reset-password' || (hash && hash.includes('type=recovery'))) {
       setCurrentPage('reset-password');
-    } else if (path.startsWith('/listing/')) {
-      const pathParts = path.split('/listing/');
-      if (pathParts.length > 1) {
-        const id = pathParts[1].split('?')[0];
-        if (id) {
-          setSelectedListingId(id);
-          setCurrentPage('listing-detail');
-        }
+    } else if (parseListingId(path, hash)) {
+      const id = parseListingId(path, hash);
+      if (id) {
+        setSelectedListingId(id);
+        setCurrentPage('listing-detail');
       }
     } else if (path === '/add') {
       setCurrentPage('add-listing');
@@ -55,14 +64,11 @@ function App() {
       const newHash = window.location.hash;
       if (newPath === '/reset-password' || (newHash && newHash.includes('type=recovery'))) {
         setCurrentPage('reset-password');
-      } else if (newPath.startsWith('/listing/')) {
-        const pathParts = newPath.split('/listing/');
-        if (pathParts.length > 1) {
-          const id = pathParts[1].split('?')[0];
-          if (id) {
-            setSelectedListingId(id);
-            setCurrentPage('listing-detail');
-          }
+      } else if (parseListingId(newPath, newHash)) {
+        const id = parseListingId(newPath, newHash);
+        if (id) {
+          setSelectedListingId(id);
+          setCurrentPage('listing-detail');
         }
       } else if (newPath === '/add') {
         setCurrentPage('add-listing');
@@ -136,6 +142,7 @@ function App() {
           listingId={selectedListingId}
           onBack={() => handleNavigate('home')}
           onEdit={handleEditListing}
+          onViewListing={handleViewListing}
         />
       )}
 

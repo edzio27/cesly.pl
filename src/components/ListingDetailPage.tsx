@@ -8,6 +8,7 @@ type ListingDetailPageProps = {
   listingId: string;
   onBack: () => void;
   onEdit?: (listing: Listing) => void;
+  onViewListing?: (id: string) => void;
 };
 
 type SellerProfile = {
@@ -16,7 +17,7 @@ type SellerProfile = {
   name?: string;
 };
 
-export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPageProps) {
+export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: ListingDetailPageProps) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -247,7 +248,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
         .select('*')
         .neq('id', listingId)
         .or(`brand.eq.${listing.brand},vehicle_type.eq.${listing.vehicle_type}`)
-        .eq('status', 'active')
+        .eq('status', 'published')
         .order('is_promoted', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(6);
@@ -651,10 +652,19 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
                     : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
 
                   return (
-                    <div
+                    <a
                       key={suggestedListing.id}
-                      onClick={() => window.location.hash = `/listing/${suggestedListing.id}`}
-                      className="flex-none w-72 snap-start"
+                      href={`/listing/${suggestedListing.id}`}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                        e.preventDefault();
+                        if (onViewListing) {
+                          onViewListing(suggestedListing.id);
+                        } else {
+                          window.history.pushState({}, '', `/listing/${suggestedListing.id}`);
+                        }
+                      }}
+                      className="flex-none w-72 snap-start block"
                     >
                       <div className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300">
                         {suggestedListing.is_promoted && (
@@ -712,7 +722,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </a>
                   );
                 })}
               </div>

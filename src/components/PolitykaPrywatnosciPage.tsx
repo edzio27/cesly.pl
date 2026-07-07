@@ -53,9 +53,11 @@ export default function PolitykaPrywatnosciPage() {
               <h2 className="text-lg font-semibold text-gray-900">4. Odbiorcy danych</h2>
               <p className="mt-2">
                 Dane przetwarzane są przy użyciu zewnętrznych dostawców usług hostingowych i bazodanowych (Supabase)
-                oraz hostingu (Vercel). [UZUPEŁNIĆ: czy dane są przekazywane poza Europejski Obszar Gospodarczy oraz
-                na jakiej podstawie prawnej — np. standardowe klauzule umowne]. Dane kontaktowe podane w ogłoszeniu są
-                widoczne publicznie dla osób przeglądających Serwis.
+                oraz hostingu (Vercel). Dostawcy ci są podmiotami powiązanymi z grupami kapitałowymi z siedzibą poza
+                Europejskim Obszarem Gospodarczym (USA), w związku z czym dane mogą być przekazywane poza EOG.
+                Podstawą prawną takiego przekazania są standardowe klauzule umowne (SCC) zatwierdzone przez Komisję
+                Europejską, stosowane przez ww. dostawców w ramach zawieranych z nimi umów powierzenia przetwarzania
+                danych. Dane kontaktowe podane w ogłoszeniu są widoczne publicznie dla osób przeglądających Serwis.
               </p>
             </section>
 
@@ -63,8 +65,8 @@ export default function PolitykaPrywatnosciPage() {
               <h2 className="text-lg font-semibold text-gray-900">5. Okres przechowywania danych</h2>
               <p className="mt-2">
                 Dane konta i ogłoszeń przechowywane są przez czas korzystania z Serwisu oraz do momentu usunięcia
-                konta przez Użytkownika lub Usługodawcę. Dane analityczne przechowywane są przez okres [UZUPEŁNIĆ, np.
-                12 miesięcy] od ich zebrania.
+                konta przez Użytkownika lub Usługodawcę. Dane analityczne (statystyki odwiedzin i kliknięć)
+                przechowywane są przez okres 12 miesięcy od ich zebrania, po czym są automatycznie usuwane.
               </p>
             </section>
 

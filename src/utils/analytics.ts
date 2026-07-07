@@ -1,5 +1,23 @@
 import { supabase } from '../lib/supabase';
 
+const COOKIE_CONSENT_KEY = 'cesly_cookie_consent';
+export type CookieConsent = 'accepted' | 'declined';
+
+export function getCookieConsent(): CookieConsent | null {
+  const value = localStorage.getItem(COOKIE_CONSENT_KEY);
+  return value === 'accepted' || value === 'declined' ? value : null;
+}
+
+export function setCookieConsent(value: CookieConsent): void {
+  localStorage.setItem(COOKIE_CONSENT_KEY, value);
+}
+
+// Analytics cookies require opt-in consent (Polish telecom law / RODO) -
+// nothing is tracked until the user explicitly accepts the cookie banner.
+function hasAnalyticsConsent(): boolean {
+  return getCookieConsent() === 'accepted';
+}
+
 async function hashIP(ip: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(ip);
@@ -23,6 +41,7 @@ export async function trackPageView(
   pageType: string,
   listingId?: string
 ): Promise<void> {
+  if (!hasAnalyticsConsent()) return;
   try {
     const ip = await getClientIP();
     const ipHash = await hashIP(ip);
@@ -43,6 +62,7 @@ export async function trackListingClick(
   listingId: string,
   clickType: 'card' | 'detail_view' | 'contact' = 'card'
 ): Promise<void> {
+  if (!hasAnalyticsConsent()) return;
   try {
     const ip = await getClientIP();
     const ipHash = await hashIP(ip);

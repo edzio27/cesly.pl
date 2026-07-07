@@ -6,6 +6,7 @@ import { trackListingClick } from '../utils/analytics';
 type ListingCardProps = {
   listing: Listing;
   onView: () => void;
+  priority?: boolean;
 };
 
 function calcDealScore(listing: Listing): number | null {
@@ -48,7 +49,7 @@ function StarRating({ score }: { score: number }) {
   );
 }
 
-export function ListingCard({ listing, onView }: ListingCardProps) {
+export function ListingCard({ listing, onView, priority = false }: ListingCardProps) {
   const mainImage = listing.images && listing.images.length > 0
     ? listing.images[0]
     : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
@@ -77,6 +78,9 @@ export function ListingCard({ listing, onView }: ListingCardProps) {
         <img
           src={mainImage}
           alt={listing.title}
+          loading={priority ? 'eager' : 'lazy'}
+          // @ts-expect-error React 18 types don't include fetchpriority yet; lowercase name is required for React to pass it through as-is
+          fetchpriority={priority ? 'high' : 'auto'}
           className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>

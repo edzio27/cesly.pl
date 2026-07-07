@@ -123,10 +123,10 @@ export function HomePage({ onViewListing }: HomePageProps) {
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   useEffect(() => {
-    document.title = 'Cesly.pl - Cesja leasingu, przejęcie umowy leasingowej | Ogłoszenia z całej Polski';
+    document.title = 'Cesly.pl – Cesja leasingu i przejęcie umowy leasingowej';
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', 'Cesly.pl to platforma do cesji i przejęcia leasingu samochodów. Znajdź oferty przejęcia umowy leasingowej, odstąp leasing lub przejmij rat leasingowych. Bezpieczne transakcje cesji leasingowych w całej Polsce.');
+      metaDesc.setAttribute('content', 'Znajdź oferty cesji i przejęcia leasingu samochodów w całej Polsce. Przejmij raty leasingowe lub odstąp swój leasing – bezpiecznie i szybko.');
     }
     trackPageView('home');
   }, []);
@@ -557,10 +557,11 @@ export function HomePage({ onViewListing }: HomePageProps) {
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-            {listings.map((listing) => (
+            {listings.map((listing, index) => (
               <ListingCard
                 key={listing.id}
                 listing={listing}
+                priority={currentPage === 1 && index < 4}
                 onView={() => onViewListing(listing.id)}
               />
             ))}

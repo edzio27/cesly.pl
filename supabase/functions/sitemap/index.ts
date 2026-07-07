@@ -42,6 +42,18 @@ Deno.serve(async (req: Request) => {
       <image:caption>Portal ogłoszeń cesji i przejęcia leasingu samochodów</image:caption>
     </image:image>
   </url>
+  <url>
+    <loc>https://cesly.pl/regulamin</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://cesly.pl/polityka-prywatnosci</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
 `;
 
     for (const listing of listings || []) {

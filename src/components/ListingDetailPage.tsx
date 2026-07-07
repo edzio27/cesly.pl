@@ -46,6 +46,25 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
   }, [listing]);
 
   useEffect(() => {
+    if (!loading && !listing) {
+      let robotsTag = document.querySelector('meta[name="robots"]');
+      if (!robotsTag) {
+        robotsTag = document.createElement('meta');
+        robotsTag.setAttribute('name', 'robots');
+        document.head.appendChild(robotsTag);
+      }
+      const previousContent = robotsTag.getAttribute('content');
+      robotsTag.setAttribute('content', 'noindex, follow');
+
+      return () => {
+        if (previousContent) {
+          robotsTag!.setAttribute('content', previousContent);
+        }
+      };
+    }
+  }, [loading, listing]);
+
+  useEffect(() => {
     if (listing) {
       const image = listing.images && listing.images.length > 0
         ? listing.images[0]
@@ -77,7 +96,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
     }
 
     return () => {
-      document.title = 'Cesly.pl - Cesja leasingu, przejęcie umowy leasingowej | Ogłoszenia z całej Polski';
+      document.title = 'Cesly.pl – Cesja leasingu i przejęcie umowy leasingowej';
       removeStructuredData();
     };
   }, [listing, listingId]);
@@ -482,7 +501,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                           : 'border-gray-200 hover:border-gray-400'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -709,6 +728,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                           <img
                             src={mainImage}
                             alt={suggestedListing.title}
+                            loading="lazy"
                             className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>

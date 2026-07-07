@@ -2,6 +2,8 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { HomePage } from './components/HomePage';
 import { ListingDetailPage } from './components/ListingDetailPage';
+import { Footer } from './components/Footer';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Listing } from './lib/supabase';
 
 // Only the homepage and listing pages need to be in the critical bundle -
@@ -15,6 +17,8 @@ const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
 const BulkImportPage = lazy(() => import('./components/BulkImportPage'));
 const BookmarkletPage = lazy(() => import('./components/BookmarkletPage'));
 const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const RegulaminPage = lazy(() => import('./components/RegulaminPage'));
+const PolitykaPrywatnosciPage = lazy(() => import('./components/PolitykaPrywatnosciPage'));
 
 function PageLoader() {
   return (
@@ -24,7 +28,7 @@ function PageLoader() {
   );
 }
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics' | 'regulamin' | 'polityka-prywatnosci';
 
 // Legacy/CDN-cached crawler redirects may still point at the hash form
 // (#/listing/{id}) instead of the real path. Accept both so no visitor
@@ -68,6 +72,10 @@ function App() {
       setCurrentPage('bookmarklet');
     } else if (path === '/analytics') {
       setCurrentPage('analytics');
+    } else if (path === '/regulamin') {
+      setCurrentPage('regulamin');
+    } else if (path === '/polityka-prywatnosci') {
+      setCurrentPage('polityka-prywatnosci');
     } else {
       setCurrentPage('home');
     }
@@ -95,6 +103,10 @@ function App() {
         setCurrentPage('bookmarklet');
       } else if (newPath === '/analytics') {
         setCurrentPage('analytics');
+      } else if (newPath === '/regulamin') {
+        setCurrentPage('regulamin');
+      } else if (newPath === '/polityka-prywatnosci') {
+        setCurrentPage('polityka-prywatnosci');
       } else {
         setCurrentPage('home');
         setSelectedListingId(null);
@@ -115,6 +127,8 @@ function App() {
     else if (page === 'bulk-import') url = '/bulk-import';
     else if (page === 'bookmarklet') url = '/facebook-import';
     else if (page === 'analytics') url = '/analytics';
+    else if (page === 'regulamin') url = '/regulamin';
+    else if (page === 'polityka-prywatnosci') url = '/polityka-prywatnosci';
 
     window.history.pushState({}, '', url);
 
@@ -179,7 +193,14 @@ function App() {
         {currentPage === 'analytics' && <AnalyticsPage />}
 
         {currentPage === 'reset-password' && <ResetPasswordPage />}
+
+        {currentPage === 'regulamin' && <RegulaminPage />}
+
+        {currentPage === 'polityka-prywatnosci' && <PolitykaPrywatnosciPage />}
       </Suspense>
+
+      <Footer onNavigate={handleNavigate} />
+      <CookieConsentBanner />
     </div>
   );
 }

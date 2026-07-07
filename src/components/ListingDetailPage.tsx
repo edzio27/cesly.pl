@@ -542,6 +542,60 @@ export function ListingDetailPage({ listingId, onBack, onEdit }: ListingDetailPa
                 </div>
               </div>
 
+              {(() => {
+                const mv = listing.market_value;
+                const rb = listing.remaining_balance;
+                if (!mv || !rb || mv <= 0) return null;
+                const gain = mv - rb - (listing.transfer_fee || 0);
+                const ratio = gain / mv;
+                const score = Math.min(10, Math.max(0, ratio * 10 + 5));
+                const scoreRounded = Math.round(score * 10) / 10;
+                const isGreat = scoreRounded >= 8;
+                const isGood = scoreRounded >= 6;
+                const colorClass = isGreat ? 'from-emerald-500 to-teal-500' : isGood ? 'from-amber-400 to-orange-400' : 'from-red-400 to-rose-500';
+                const label = isGreat ? 'Super okazja!' : isGood ? 'Dobra oferta' : 'Poniżej średniej';
+                return (
+                  <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 mb-6 text-white shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={18} className="text-emerald-400" />
+                        <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Opłacalność cesji</span>
+                      </div>
+                      <div className={`bg-gradient-to-br ${colorClass} px-3 py-1 rounded-lg flex items-center gap-1.5`}>
+                        <Star size={13} fill="currentColor" />
+                        <span className="text-sm font-black">{scoreRounded.toFixed(1)}/10</span>
+                        <span className="text-xs font-semibold">{label}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Wartość rynkowa auta</span>
+                        <span className="font-semibold">{mv.toLocaleString('pl-PL')} zł</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Pozostałe saldo leasingu</span>
+                        <span className="font-semibold text-red-300">− {rb.toLocaleString('pl-PL')} zł</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Odstępne</span>
+                        <span className="font-semibold text-red-300">− {listing.transfer_fee.toLocaleString('pl-PL')} zł</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-600">
+                        <span className="text-slate-300 font-medium">Twój zysk (vs. nowe auto)</span>
+                        <span className={`text-lg font-black ${gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {gain >= 0 ? '+' : ''}{gain.toLocaleString('pl-PL')} zł
+                        </span>
+                      </div>
+                    </div>
+                    {gain > 0 && (
+                      <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg px-3 py-2 text-xs text-emerald-300 font-medium">
+                        Ta cesja jest o {gain.toLocaleString('pl-PL')} zł korzystniejsza niż leasing nowego auta tego modelu.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3">Kontakt</h2>

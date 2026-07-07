@@ -473,6 +473,18 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     }
   };
 
+  const triggerMarketValueEstimate = (listingId: string, brand: string, model: string, year: number, mileage: number | null, priceType: string) => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/estimate-car-value`;
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ listingId, brand, model, year, mileage, price_type: priceType }),
+    }).catch(() => {});
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -517,16 +529,22 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
           .eq('id', editingListing.id);
 
         if (updateError) throw updateError;
+        triggerMarketValueEstimate(editingListing.id, formData.brand, formData.model, parseInt(formData.year.toString()), formData.mileage ? parseInt(formData.mileage) : null, formData.priceType);
       } else {
-        const { error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from('listings')
           .insert({
             ...listingData,
             user_id: user.id,
             is_promoted: false,
-          });
+          })
+          .select('id')
+          .single();
 
         if (insertError) throw insertError;
+        if (inserted?.id) {
+          triggerMarketValueEstimate(inserted.id, formData.brand, formData.model, parseInt(formData.year.toString()), formData.mileage ? parseInt(formData.mileage) : null, formData.priceType);
+        }
       }
 
       images.forEach((img) => {

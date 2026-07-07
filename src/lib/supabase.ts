@@ -28,6 +28,11 @@ export type Listing = {
   custom_contact_name?: string;
   custom_contact_phone?: string;
   custom_contact_email?: string;
+  market_value?: number;
+  remaining_balance?: number;
+  price?: number;
+  fuel_type?: string;
+  status?: string;
 };
 
 export type Favorite = {

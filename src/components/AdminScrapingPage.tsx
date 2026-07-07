@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Settings, Play, Trash2, Check, X, ExternalLink } from 'lucide-react';
+import { Settings, Play, Trash2, Check, X, ExternalLink, Star } from 'lucide-react';
 
 interface ScrapingSource {
   id: string;
@@ -33,6 +33,8 @@ export default function AdminScrapingPage() {
   const [scrapedListings, setScrapedListings] = useState<ScrapedListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<string | null>(null);
   const [showAddSource, setShowAddSource] = useState(false);
   const [newSource, setNewSource] = useState({
     name: '',
@@ -88,6 +90,30 @@ export default function AdminScrapingPage() {
       alert('Error running scraper');
     } finally {
       setScraping(false);
+    }
+  }
+
+  async function runBackfill() {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backfill-market-values`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Błąd');
+      setBackfillResult(`Wyceniono ${result.processed} z ${result.total} ogłoszeń`);
+    } catch (error: any) {
+      setBackfillResult(`Błąd: ${error.message}`);
+    } finally {
+      setBackfilling(false);
     }
   }
 
@@ -208,7 +234,7 @@ export default function AdminScrapingPage() {
             <Settings className="w-5 h-5" />
             Scraping Sources
           </h2>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <button
               onClick={runScraper}
               disabled={scraping}
@@ -217,6 +243,19 @@ export default function AdminScrapingPage() {
               <Play className="w-4 h-4" />
               {scraping ? 'Running...' : 'Run Scraper'}
             </button>
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={runBackfill}
+                disabled={backfilling}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
+              >
+                <Star className="w-4 h-4" />
+                {backfilling ? 'Szacowanie...' : 'Wycen brakujące oceny (AI)'}
+              </button>
+              {backfillResult && (
+                <p className="text-xs text-gray-600 px-1">{backfillResult}</p>
+              )}
+            </div>
             <button
               onClick={() => setShowAddSource(!showAddSource)}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"

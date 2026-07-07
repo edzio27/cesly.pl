@@ -1,15 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { HomePage } from './components/HomePage';
 import { ListingDetailPage } from './components/ListingDetailPage';
-import { AddListingPage } from './components/AddListingPage';
-import { ProfilePage } from './components/ProfilePage';
-import AdminScrapingPage from './components/AdminScrapingPage';
-import ResetPasswordPage from './components/ResetPasswordPage';
-import BulkImportPage from './components/BulkImportPage';
-import BookmarkletPage from './components/BookmarkletPage';
-import { AnalyticsPage } from './components/AnalyticsPage';
 import { Listing } from './lib/supabase';
+
+// Only the homepage and listing pages need to be in the critical bundle -
+// they're the pages Google indexes. Everything else (auth-gated tools,
+// admin utilities) loads on demand to keep the initial JS payload small,
+// which helps Core Web Vitals (a Google ranking signal).
+const AddListingPage = lazy(() => import('./components/AddListingPage').then(m => ({ default: m.AddListingPage })));
+const ProfilePage = lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AdminScrapingPage = lazy(() => import('./components/AdminScrapingPage'));
+const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
+const BulkImportPage = lazy(() => import('./components/BulkImportPage'));
+const BookmarkletPage = lazy(() => import('./components/BookmarkletPage'));
+const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
+    </div>
+  );
+}
 
 type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics';
 
@@ -146,25 +159,27 @@ function App() {
         />
       )}
 
-      {currentPage === 'add-listing' && (
-        <AddListingPage
-          onBack={() => handleNavigate('home')}
-          onSuccess={handleAddListingSuccess}
-          editingListing={editingListing}
-        />
-      )}
+      <Suspense fallback={<PageLoader />}>
+        {currentPage === 'add-listing' && (
+          <AddListingPage
+            onBack={() => handleNavigate('home')}
+            onSuccess={handleAddListingSuccess}
+            editingListing={editingListing}
+          />
+        )}
 
-      {currentPage === 'profile' && <ProfilePage onViewListing={handleViewListing} />}
+        {currentPage === 'profile' && <ProfilePage onViewListing={handleViewListing} />}
 
-      {currentPage === 'admin-scraping' && <AdminScrapingPage />}
+        {currentPage === 'admin-scraping' && <AdminScrapingPage />}
 
-      {currentPage === 'bulk-import' && <BulkImportPage />}
+        {currentPage === 'bulk-import' && <BulkImportPage />}
 
-      {currentPage === 'bookmarklet' && <BookmarkletPage />}
+        {currentPage === 'bookmarklet' && <BookmarkletPage />}
 
-      {currentPage === 'analytics' && <AnalyticsPage />}
+        {currentPage === 'analytics' && <AnalyticsPage />}
 
-      {currentPage === 'reset-password' && <ResetPasswordPage />}
+        {currentPage === 'reset-password' && <ResetPasswordPage />}
+      </Suspense>
     </div>
   );
 }

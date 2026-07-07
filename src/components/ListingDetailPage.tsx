@@ -149,9 +149,26 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
     script.id = 'listing-structured-data';
     script.textContent = JSON.stringify(structuredData);
     document.head.appendChild(script);
+
+    const breadcrumbData = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Strona główna", "item": "https://cesly.pl/" },
+        { "@type": "ListItem", "position": 2, "name": listing.vehicle_type, "item": `https://cesly.pl/?vehicleType=${encodeURIComponent(listing.vehicle_type)}` },
+        { "@type": "ListItem", "position": 3, "name": `${listing.brand} ${listing.model}`, "item": `https://cesly.pl/listing/${listing.id}` }
+      ]
+    };
+
+    const breadcrumbScript = document.createElement('script');
+    breadcrumbScript.type = 'application/ld+json';
+    breadcrumbScript.id = 'breadcrumb-structured-data';
+    breadcrumbScript.textContent = JSON.stringify(breadcrumbData);
+    document.head.appendChild(breadcrumbScript);
   };
 
   const removeStructuredData = () => {
+    document.getElementById('breadcrumb-structured-data')?.remove();
     const script = document.getElementById('listing-structured-data');
     if (script) {
       script.remove();
@@ -382,6 +399,20 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav aria-label="breadcrumb" className="text-sm text-gray-500 mb-4">
+          <a
+            href="/"
+            onClick={(e) => { e.preventDefault(); onBack(); }}
+            className="hover:text-blue-600"
+          >
+            Strona główna
+          </a>
+          <span className="mx-2">/</span>
+          <span className="capitalize">{listing.vehicle_type}</span>
+          <span className="mx-2">/</span>
+          <span className="text-gray-700 font-medium">{listing.brand} {listing.model}</span>
+        </nav>
+
         <button
           onClick={onBack}
           className="flex items-center text-blue-600 hover:text-blue-700 mb-6"

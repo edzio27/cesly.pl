@@ -2,11 +2,25 @@
 User-agent: *
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 # Google bots
 User-agent: Googlebot
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 User-agent: Googlebot-Image
 Allow: /
@@ -15,39 +29,95 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 # ChatGPT/OpenAI
 User-agent: GPTBot
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 # Claude
 User-agent: ClaudeBot
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 # Other AI crawlers
 User-agent: anthropic-ai
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 User-agent: ChatGPT-User
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 User-agent: cohere-ai
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 User-agent: PerplexityBot
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
 User-agent: YouBot
 Allow: /
 Allow: /listing/
+Disallow: /add
+Disallow: /profile
+Disallow: /admin-scraping
+Disallow: /bulk-import
+Disallow: /facebook-import
+Disallow: /analytics
+Disallow: /reset-password
 
-Sitemap: https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/sitemap
+Sitemap: https://cesly.pl/sitemap.xml
 
 # Crawl delay (optional)
 Crawl-delay: 1

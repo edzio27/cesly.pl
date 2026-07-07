@@ -142,6 +142,37 @@ export function HomePage({ onViewListing }: HomePageProps) {
   }, [currentPage]);
 
   useEffect(() => {
+    if (listings.length === 0) return;
+
+    const structuredData = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Oferty cesji leasingu',
+      description: 'Aktualne ogłoszenia przejęcia i cesji umów leasingowych samochodów',
+      numberOfItems: totalItems,
+      itemListElement: listings.map((listing, index) => ({
+        '@type': 'ListItem',
+        position: (currentPage - 1) * ITEMS_PER_PAGE + index + 1,
+        url: `https://cesly.pl/listing/${listing.id}`,
+        name: listing.title,
+      })),
+    };
+
+    let script = document.getElementById('itemlist-structured-data') as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.id = 'itemlist-structured-data';
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(structuredData);
+
+    return () => {
+      document.getElementById('itemlist-structured-data')?.remove();
+    };
+  }, [listings, currentPage, totalItems]);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 

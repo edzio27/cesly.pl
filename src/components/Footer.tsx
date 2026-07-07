@@ -36,7 +36,7 @@ export function Footer({ onNavigate }: FooterProps) {
 
         <div>
           <h4 className="text-white font-semibold mb-2">Kontakt</h4>
-          <p className="text-sm text-gray-400">[uzupełnić: adres e-mail kontaktowy]</p>
+          <p className="text-sm text-gray-400">eugeniusz.keptia@gmail.com</p>
         </div>
       </div>
 

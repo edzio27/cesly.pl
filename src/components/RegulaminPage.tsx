@@ -25,7 +25,7 @@ export default function RegulaminPage() {
               <h2 className="text-lg font-semibold text-gray-900">§1. Postanowienia ogólne</h2>
               <ol className="list-decimal list-inside space-y-1 mt-2">
                 <li>Niniejszy Regulamin określa zasady korzystania z serwisu internetowego Cesly.pl (dalej: „Serwis”), dostępnego pod adresem cesly.pl.</li>
-                <li>Usługodawcą i administratorem Serwisu jest [UZUPEŁNIĆ: pełna nazwa podmiotu, adres siedziby, NIP, REGON, adres e-mail kontaktowy] (dalej: „Usługodawca”).</li>
+                <li>Usługodawcą i administratorem Serwisu jest EloPomelo Eugeniusz Keptia, ul. Kłodzka 32/9, 50-536 Wrocław, NIP: 6572799496, adres e-mail: eugeniusz.keptia@gmail.com (dalej: „Usługodawca”).</li>
                 <li>Serwis jest platformą ogłoszeniową umożliwiającą Użytkownikom publikowanie i przeglądanie ogłoszeń dotyczących cesji (przejęcia) umów leasingowych pojazdów.</li>
                 <li>Użytkownikiem jest każda osoba fizyczna, prawna lub jednostka organizacyjna korzystająca z Serwisu.</li>
               </ol>
@@ -70,7 +70,7 @@ export default function RegulaminPage() {
             <section>
               <h2 className="text-lg font-semibold text-gray-900">§6. Reklamacje</h2>
               <p className="mt-2">
-                Reklamacje dotyczące funkcjonowania Serwisu można zgłaszać na adres e-mail [UZUPEŁNIĆ]. Reklamacja
+                Reklamacje dotyczące funkcjonowania Serwisu można zgłaszać na adres e-mail eugeniusz.keptia@gmail.com. Reklamacja
                 powinna zawierać opis problemu oraz dane kontaktowe zgłaszającego. Usługodawca rozpatruje reklamacje
                 w terminie 14 dni od ich otrzymania.
               </p>

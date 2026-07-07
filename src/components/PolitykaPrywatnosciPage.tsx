@@ -25,8 +25,9 @@ export default function PolitykaPrywatnosciPage() {
               <h2 className="text-lg font-semibold text-gray-900">1. Administrator danych osobowych</h2>
               <p className="mt-2">
                 Administratorem danych osobowych przetwarzanych w związku z korzystaniem z serwisu Cesly.pl (dalej:
-                „Serwis”) jest [UZUPEŁNIĆ: pełna nazwa podmiotu, adres siedziby, NIP, REGON]. W sprawach dotyczących
-                ochrony danych osobowych można kontaktować się pod adresem e-mail [UZUPEŁNIĆ ADRES E-MAIL].
+                „Serwis”) jest EloPomelo Eugeniusz Keptia, ul. Kłodzka 32/9, 50-536 Wrocław, NIP: 6572799496. W
+                sprawach dotyczących ochrony danych osobowych można kontaktować się pod adresem e-mail
+                eugeniusz.keptia@gmail.com.
               </p>
             </section>
 
@@ -103,7 +104,7 @@ export default function PolitykaPrywatnosciPage() {
               <h2 className="text-lg font-semibold text-gray-900">9. Kontakt</h2>
               <p className="mt-2">
                 W sprawach dotyczących ochrony danych osobowych można kontaktować się pod adresem e-mail
-                [UZUPEŁNIĆ ADRES E-MAIL].
+                eugeniusz.keptia@gmail.com.
               </p>
             </section>
           </div>

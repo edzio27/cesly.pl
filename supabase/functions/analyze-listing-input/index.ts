@@ -9,6 +9,7 @@ const corsHeaders = {
 const ALLOWED_DOMAINS = ["otomoto.pl", "olx.pl", "gratka.pl", "facebook.com"];
 
 interface AnalyzeResult {
+  title: string | null;
   brand: string | null;
   model: string | null;
   year: number | null;
@@ -27,6 +28,7 @@ interface AnalyzeResult {
 
 function emptyResult(): AnalyzeResult {
   return {
+    title: null,
     brand: null,
     model: null,
     year: null,
@@ -187,9 +189,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const promptText = `Na podstawie poniższych informacji (tekst ogłoszenia i/lub zdjęcia pojazdu) wyodrębnij dane pojazdu. Odpowiedz WYŁĄCZNIE czystym obiektem JSON, bez żadnego dodatkowego tekstu, w formacie:
-{"brand": string|null, "model": string|null, "year": number|null, "mileage": number|null, "vehicleType": "samochód"|"motocykl"|"łódź"|null, "description": string|null, "monthlyPayment": number|null, "transferFee": number|null, "buyoutPrice": number|null, "remainingInstallments": number|null, "totalInstallments": number|null, "priceType": "netto"|"brutto"|null}
+{"title": string|null, "brand": string|null, "model": string|null, "year": number|null, "mileage": number|null, "vehicleType": "samochód"|"motocykl"|"łódź"|null, "description": string|null, "monthlyPayment": number|null, "transferFee": number|null, "buyoutPrice": number|null, "remainingInstallments": number|null, "totalInstallments": number|null, "priceType": "netto"|"brutto"|null}
 
 Zasady:
+- "title" to krótki, zwięzły tytuł ogłoszenia po polsku, w stylu "Marka Model Rok - cesja leasingu" (np. "BMW Seria 8 M850i xDrive 2019 - cesja leasingu") - użyj konkretnej wersji/trimu jeśli jest znana, żeby tytuł wyróżniał się na tle innych ogłoszeń tej samej marki i modelu.
 - "mileage" to przebieg w kilometrach jako liczba całkowita (np. odczytana z licznika na zdjęciu deski rozdzielczej), bez jednostek.
 - "description" to ORYGINALNY opis ogłoszenia, PRZEPISANY DOSŁOWNIE (nie streszczaj, nie skracaj, nie parafrazuj) - zachowaj wszystkie szczegóły, które sprzedający napisał. Jeśli podany tekst to cała strona internetowa (np. pobrana z Otomoto/OLX), znajdź w niej właściwy opis ogłoszenia i przepisz TYLKO tę część, pomijając menu strony, reklamy, stopkę i inne elementy niezwiązane z opisem pojazdu. Usuń z przepisanego tekstu wszelkie dane kontaktowe sprzedającego z tamtego ogłoszenia (numery telefonu, adresy e-mail, linki) - to nie powinno trafić do nowego ogłoszenia. Jeśli nie da się sensownie wyodrębnić opisu, zwróć null.
 - "monthlyPayment" (rata miesięczna), "transferFee" (odstępne za przejęcie umowy), "buyoutPrice" (cena/wartość wykupu), "remainingInstallments" (liczba pozostałych rat do spłaty), "totalInstallments" (całkowita liczba rat w umowie) i "priceType" (czy podane kwoty są netto czy brutto) WYCIĄGAJ WYŁĄCZNIE jeśli są DOSŁOWNIE i JAWNIE podane w tekście jako konkretne liczby/wartości. NIGDY ich nie zgaduj, nie szacuj i nie oblicz na podstawie innych danych (np. na podstawie marki/modelu/roku). Jeśli tekst nie zawiera wprost takiej informacji (np. bo źródłem jest zwykłe ogłoszenie sprzedaży samochodu bez wzmianki o leasingu), zwróć null dla tych pól - to oczekiwany, częsty wynik.
@@ -232,6 +235,7 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
     }
 
     const out: AnalyzeResult = {
+      title: typeof parsed.title === "string" ? parsed.title : null,
       brand: typeof parsed.brand === "string" ? parsed.brand : null,
       model: typeof parsed.model === "string" ? parsed.model : null,
       year: typeof parsed.year === "number" ? parsed.year : null,

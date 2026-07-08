@@ -46,7 +46,6 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set());
   const touchedFieldsRef = useRef<Set<string>>(new Set());
-  const analyzeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAnalyzedImageCountRef = useRef(0);
 
   const [formData, setFormData] = useState({
@@ -210,6 +209,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
   };
 
   const applyAnalysisResult = (result: {
+    title: string | null;
     brand: string | null;
     model: string | null;
     year: number | null;
@@ -229,6 +229,10 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     setFormData((prev) => {
       const next = { ...prev };
 
+      if (result.title && !touchedFieldsRef.current.has('title')) {
+        next.title = result.title;
+        filled.push('title');
+      }
       if (
         result.vehicleType &&
         !touchedFieldsRef.current.has('vehicleType') &&
@@ -345,19 +349,13 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
   };
 
   const handleSmartInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setSmartInput(value);
+    setSmartInput(e.target.value);
     setNeedsManualPaste(false);
+  };
 
-    if (analyzeTimerRef.current) {
-      clearTimeout(analyzeTimerRef.current);
-    }
-
-    if (!value.trim()) return;
-
-    analyzeTimerRef.current = setTimeout(() => {
-      runAnalysis({ text: value.trim() });
-    }, 1500);
+  const handleExtractClick = () => {
+    if (!smartInput.trim() || analyzing) return;
+    runAnalysis({ text: smartInput.trim() });
   };
 
   const isFreeTextVehicleType = formData.vehicleType === 'inne';
@@ -607,9 +605,10 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               Szybkie wypełnianie
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Wklej link do ogłoszenia (Otomoto, OLX, Gratka, Facebook) lub treść ogłoszenia
-              — spróbujemy automatycznie wypełnić markę, model, rok, przebieg, opis, a jeśli
-              treść zawiera też warunki cesji (rata, odstępne, wykup, raty) — również je.
+              Wklej link do ogłoszenia (Otomoto, OLX, Gratka, Facebook) lub treść ogłoszenia,
+              a potem kliknij "Wyciągnij dane" — spróbujemy wypełnić tytuł, markę, model, rok,
+              przebieg, opis i do 3 zdjęć, a jeśli treść zawiera też warunki cesji (rata,
+              odstępne, wykup, raty) — również je.
             </p>
 
             <textarea
@@ -620,9 +619,14 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
-            {analyzing && (
-              <p className="mt-2 text-sm text-blue-600">Analizuję...</p>
-            )}
+            <button
+              type="button"
+              onClick={handleExtractClick}
+              disabled={!smartInput.trim() || analyzing}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {analyzing ? 'Analizuję...' : 'Wyciągnij dane'}
+            </button>
 
             {needsManualPaste && !analyzing && (
               <p className="mt-2 text-sm text-amber-700">
@@ -633,7 +637,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
 
             {aiFilledFields.size > 0 && (
               <p className="mt-2 text-sm text-amber-700">
-                Wypełniliśmy automatycznie pola oznaczone bursztynową ramką poniżej —
+                Wypełniliśmy pola oznaczone bursztynową ramką poniżej —
                 sprawdź je przed zapisaniem.
               </p>
             )}
@@ -653,7 +657,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               value={formData.title}
               onChange={handleChange}
               placeholder="np. BMW 320d - cesja leasingu"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={fieldClass('title')}
             />
           </div>
 

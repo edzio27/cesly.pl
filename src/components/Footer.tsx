@@ -1,3 +1,5 @@
+import { Facebook } from 'lucide-react';
+
 type FooterProps = {
   onNavigate: (page: string) => void;
 };
@@ -36,7 +38,16 @@ export function Footer({ onNavigate }: FooterProps) {
 
         <div>
           <h4 className="text-white font-semibold mb-2">Kontakt</h4>
-          <p className="text-sm text-gray-400">eugeniusz.keptia@gmail.com</p>
+          <p className="text-sm text-gray-400 mb-3">eugeniusz.keptia@gmail.com</p>
+          <a
+            href="https://www.facebook.com/profile.php?id=61577465008887"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-amber-400 transition-colors"
+          >
+            <Facebook size={16} />
+            Cesly.pl na Facebooku
+          </a>
         </div>
       </div>
 

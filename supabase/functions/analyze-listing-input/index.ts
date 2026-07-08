@@ -15,6 +15,12 @@ interface AnalyzeResult {
   mileage: number | null;
   vehicleType: string | null;
   description: string | null;
+  monthlyPayment: number | null;
+  transferFee: number | null;
+  buyoutPrice: number | null;
+  remainingInstallments: number | null;
+  totalInstallments: number | null;
+  priceType: string | null;
   needsManualPaste?: true;
 }
 
@@ -26,6 +32,12 @@ function emptyResult(): AnalyzeResult {
     mileage: null,
     vehicleType: null,
     description: null,
+    monthlyPayment: null,
+    transferFee: null,
+    buyoutPrice: null,
+    remainingInstallments: null,
+    totalInstallments: null,
+    priceType: null,
   };
 }
 
@@ -155,11 +167,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const promptText = `Na podstawie poniższych informacji (tekst ogłoszenia i/lub zdjęcia pojazdu) wyodrębnij dane pojazdu. Odpowiedz WYŁĄCZNIE czystym obiektem JSON, bez żadnego dodatkowego tekstu, w formacie:
-{"brand": string|null, "model": string|null, "year": number|null, "mileage": number|null, "vehicleType": "samochód"|"motocykl"|"łódź"|null, "description": string|null}
+{"brand": string|null, "model": string|null, "year": number|null, "mileage": number|null, "vehicleType": "samochód"|"motocykl"|"łódź"|null, "description": string|null, "monthlyPayment": number|null, "transferFee": number|null, "buyoutPrice": number|null, "remainingInstallments": number|null, "totalInstallments": number|null, "priceType": "netto"|"brutto"|null}
 
 Zasady:
 - "mileage" to przebieg w kilometrach jako liczba całkowita (np. odczytana z licznika na zdjęciu deski rozdzielczej), bez jednostek.
-- "description" to krótki (2-4 zdania), naturalny opis pojazdu po polsku na podstawie dostępnych informacji - stanu, wyposażenia, widocznych cech. Nie wymyślaj warunków finansowych (raty, odstępne, cena wykupu) - to nie jest częścią tego zadania.
+- "description" to krótki (2-4 zdania), naturalny opis pojazdu po polsku na podstawie dostępnych informacji - stanu, wyposażenia, widocznych cech. Nie wymyślaj warunków finansowych - to osobne pola poniżej.
+- "monthlyPayment" (rata miesięczna), "transferFee" (odstępne za przejęcie umowy), "buyoutPrice" (cena/wartość wykupu), "remainingInstallments" (liczba pozostałych rat do spłaty), "totalInstallments" (całkowita liczba rat w umowie) i "priceType" (czy podane kwoty są netto czy brutto) WYCIĄGAJ WYŁĄCZNIE jeśli są DOSŁOWNIE i JAWNIE podane w tekście jako konkretne liczby/wartości. NIGDY ich nie zgaduj, nie szacuj i nie oblicz na podstawie innych danych (np. na podstawie marki/modelu/roku). Jeśli tekst nie zawiera wprost takiej informacji (np. bo źródłem jest zwykłe ogłoszenie sprzedaży samochodu bez wzmianki o leasingu), zwróć null dla tych pól - to oczekiwany, częsty wynik.
 - Jeśli czegoś nie da się ustalić, użyj null dla tego pola.
 - Nie dodawaj żadnego wyjaśnienia ani markdown - tylko sam obiekt JSON.
 
@@ -205,6 +218,15 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
       mileage: typeof parsed.mileage === "number" ? parsed.mileage : null,
       vehicleType: typeof parsed.vehicleType === "string" ? parsed.vehicleType : null,
       description: typeof parsed.description === "string" ? parsed.description : null,
+      monthlyPayment: typeof parsed.monthlyPayment === "number" ? parsed.monthlyPayment : null,
+      transferFee: typeof parsed.transferFee === "number" ? parsed.transferFee : null,
+      buyoutPrice: typeof parsed.buyoutPrice === "number" ? parsed.buyoutPrice : null,
+      remainingInstallments:
+        typeof parsed.remainingInstallments === "number" ? parsed.remainingInstallments : null,
+      totalInstallments:
+        typeof parsed.totalInstallments === "number" ? parsed.totalInstallments : null,
+      priceType:
+        parsed.priceType === "netto" || parsed.priceType === "brutto" ? parsed.priceType : null,
     };
 
     return new Response(JSON.stringify(out), {

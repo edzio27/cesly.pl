@@ -187,6 +187,12 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     mileage: number | null;
     vehicleType: string | null;
     description: string | null;
+    monthlyPayment?: number | null;
+    transferFee?: number | null;
+    buyoutPrice?: number | null;
+    remainingInstallments?: number | null;
+    totalInstallments?: number | null;
+    priceType?: string | null;
   }) => {
     const filled: string[] = [];
 
@@ -220,6 +226,36 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
       if (result.description && !touchedFieldsRef.current.has('description')) {
         next.description = result.description;
         filled.push('description');
+      }
+      // Financial/lease fields: only ever set when the source text explicitly
+      // stated them (the edge function never estimates these) - same
+      // touched-field protection as every other suggested field.
+      if (result.monthlyPayment && !touchedFieldsRef.current.has('monthlyPayment')) {
+        next.monthlyPayment = result.monthlyPayment.toString();
+        filled.push('monthlyPayment');
+      }
+      if (result.transferFee && !touchedFieldsRef.current.has('transferFee')) {
+        next.transferFee = result.transferFee.toString();
+        filled.push('transferFee');
+      }
+      if (result.buyoutPrice && !touchedFieldsRef.current.has('buyoutPrice')) {
+        next.buyoutPrice = result.buyoutPrice.toString();
+        filled.push('buyoutPrice');
+      }
+      if (result.remainingInstallments && !touchedFieldsRef.current.has('remainingInstallments')) {
+        next.remainingInstallments = result.remainingInstallments.toString();
+        filled.push('remainingInstallments');
+      }
+      if (result.totalInstallments && !touchedFieldsRef.current.has('totalInstallments')) {
+        next.totalInstallments = result.totalInstallments.toString();
+        filled.push('totalInstallments');
+      }
+      if (
+        (result.priceType === 'netto' || result.priceType === 'brutto') &&
+        !touchedFieldsRef.current.has('priceType')
+      ) {
+        next.priceType = result.priceType;
+        filled.push('priceType');
       }
 
       return next;
@@ -527,7 +563,8 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
             </h3>
             <p className="text-sm text-gray-600 mb-3">
               Wklej link do ogłoszenia (Otomoto, OLX, Gratka, Facebook) lub treść ogłoszenia
-              — spróbujemy automatycznie wypełnić markę, model, rok, przebieg i opis.
+              — spróbujemy automatycznie wypełnić markę, model, rok, przebieg, opis, a jeśli
+              treść zawiera też warunki cesji (rata, odstępne, wykup, raty) — również je.
             </p>
 
             <textarea
@@ -751,7 +788,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 value={formData.monthlyPayment}
                 onChange={handleChange}
                 placeholder="1500"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('monthlyPayment')}
               />
             </div>
 
@@ -769,7 +806,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 value={formData.transferFee}
                 onChange={handleChange}
                 placeholder="5000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('transferFee')}
               />
             </div>
 
@@ -786,7 +823,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 value={formData.buyoutPrice}
                 onChange={handleChange}
                 placeholder="50000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('buyoutPrice')}
               />
             </div>
           </div>
@@ -808,7 +845,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 value={formData.remainingInstallments}
                 onChange={handleChange}
                 placeholder="24"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('remainingInstallments')}
               />
             </div>
 
@@ -828,7 +865,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 value={formData.totalInstallments}
                 onChange={handleChange}
                 placeholder="48"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('totalInstallments')}
               />
             </div>
           </div>

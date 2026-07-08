@@ -147,6 +147,21 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     touchedFieldsRef.current = touchedFields;
   }, [touchedFields]);
 
+  useEffect(() => {
+    const anyUploading = images.some((img) => img.uploading);
+    if (anyUploading) return;
+
+    const readyUrls = images
+      .filter((img) => !img.uploading && !img.error)
+      .map((img) => img.value);
+
+    if (readyUrls.length === 0) return;
+    if (readyUrls.length === lastAnalyzedImageCountRef.current) return;
+
+    lastAnalyzedImageCountRef.current = readyUrls.length;
+    runAnalysis({ text: smartInput.trim() || undefined, imageUrls: readyUrls });
+  }, [images]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {

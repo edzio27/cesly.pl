@@ -652,7 +652,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
               {(() => {
                 const deal = calculateDealScore(listing);
-                if (!deal || deal.score <= 0) return null;
+                if (!deal || deal.score < 5.5) return null;
                 const gain = deal.marketValue - deal.totalCost;
                 return (
                   <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 mb-6 text-white shadow-xl">

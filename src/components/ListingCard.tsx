@@ -82,7 +82,7 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
             {listing.vehicle_type}
           </span>
         </div>
-        {deal && deal.score > 0 && <ScoreBadge deal={deal} />}
+        {deal && deal.score >= 5.5 && <ScoreBadge deal={deal} />}
       </div>
 
       <div className="p-3">
@@ -136,7 +136,7 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
             <Calendar size={12} className="mr-1" />
             {new Date(listing.created_at).toLocaleDateString('pl-PL')}
           </div>
-          {deal && deal.score > 0 && <StarRating score={deal.score} />}
+          {deal && deal.score >= 5.5 && <StarRating score={deal.score} />}
         </div>
       </div>
     </a>

@@ -285,6 +285,13 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     ? (MODELS_BY_VEHICLE_TYPE[formData.vehicleType] || {})[formData.brand] || []
     : [];
 
+  const fieldClass = (field: string) =>
+    `w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+      aiFilledFields.has(field)
+        ? 'border-2 border-amber-400 bg-amber-50'
+        : 'border border-gray-300'
+    }`;
+
   const createImagePreview = (file: File): string => {
     return URL.createObjectURL(file);
   };
@@ -579,7 +586,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 required
                 value={formData.vehicleType}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('vehicleType')}
               >
                 <option value="samochód">Samochód</option>
                 <option value="motocykl">Motocykl</option>
@@ -601,7 +608,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 max={new Date().getFullYear() + 1}
                 value={formData.year}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('year')}
               />
             </div>
 
@@ -617,7 +624,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                 value={formData.mileage}
                 onChange={handleChange}
                 placeholder="np. 50000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={fieldClass('mileage')}
               />
             </div>
           </div>
@@ -636,7 +643,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                   value={formData.brand}
                   onChange={handleChange}
                   placeholder="np. Segway, Can-Am..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={fieldClass('brand')}
                 />
               ) : (
                 <select
@@ -648,7 +655,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                     handleChange(e);
                     setFormData((prev) => ({ ...prev, model: '' }));
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={fieldClass('brand')}
                 >
                   <option value="">Wybierz markę</option>
                   {availableBrands.map((brand) => (
@@ -674,7 +681,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                   onChange={handleChange}
                   disabled={!isFreeTextVehicleType && !formData.brand}
                   placeholder="np. wpisz model ręcznie"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`${fieldClass('model')} disabled:bg-gray-100 disabled:cursor-not-allowed`}
                 />
               ) : (
                 <select
@@ -684,7 +691,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
                   value={formData.model}
                   onChange={handleChange}
                   disabled={!formData.brand}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`${fieldClass('model')} disabled:bg-gray-100 disabled:cursor-not-allowed`}
                 >
                   <option value="">
                     {formData.brand ? 'Wybierz model' : 'Najpierw wybierz markę'}
@@ -838,7 +845,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               value={formData.description}
               onChange={handleChange}
               placeholder="Szczegółowy opis pojazdu, stan techniczny, wyposażenie, historia..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={fieldClass('description')}
             />
           </div>
 

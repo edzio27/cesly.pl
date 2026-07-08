@@ -180,6 +180,35 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // The model field is a closed <select> for most brands (e.g. BMW only
+  // offers exact strings like "Seria 8", not "Seria 8 M850i xDrive Coupe").
+  // Claude often returns a more descriptive trim/variant name from listing
+  // text, which wouldn't match any <option> and would silently render blank.
+  // Match it against the brand's known model list; fall back to null
+  // (leave the field for the seller to pick) rather than setting a value
+  // the dropdown can't display. Brands without a curated model list render
+  // a free-text input instead, where any string is valid as-is.
+  const resolveModelForDropdown = (
+    vehicleType: string,
+    brand: string,
+    aiModel: string
+  ): string | null => {
+    const knownModels = MODELS_BY_VEHICLE_TYPE[vehicleType]?.[brand];
+    if (!knownModels || knownModels.length === 0) {
+      return aiModel;
+    }
+    const normalizedAiModel = aiModel.toLowerCase();
+    const exactMatch = knownModels.find((m) => m.toLowerCase() === normalizedAiModel);
+    if (exactMatch) return exactMatch;
+    const containedMatches = knownModels.filter((m) =>
+      normalizedAiModel.includes(m.toLowerCase())
+    );
+    if (containedMatches.length > 0) {
+      return containedMatches.sort((a, b) => b.length - a.length)[0];
+    }
+    return null;
+  };
+
   const applyAnalysisResult = (result: {
     brand: string | null;
     model: string | null;
@@ -212,8 +241,11 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
         filled.push('brand');
       }
       if (result.model && !touchedFieldsRef.current.has('model')) {
-        next.model = result.model;
-        filled.push('model');
+        const resolvedModel = resolveModelForDropdown(next.vehicleType, next.brand, result.model);
+        if (resolvedModel) {
+          next.model = resolvedModel;
+          filled.push('model');
+        }
       }
       if (result.year && !touchedFieldsRef.current.has('year')) {
         next.year = result.year;

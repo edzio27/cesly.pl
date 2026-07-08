@@ -56,9 +56,34 @@ function emptyResult(): AnalyzeResult {
 // expected, non-fatal degradation, not an error.
 const OLX_GROUP_CDN_IMAGE_PATTERN = /https:\/\/ireland\.apollo\.olxcdn\.com\/v1\/files\/[A-Za-z0-9._-]+\/image/g;
 
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'");
+}
+
+// Most listing/social platforms include an og:image meta tag purely so
+// external sites (Cesly included) can render a link preview without being
+// logged in - this is exactly the case for Facebook, where the actual post
+// body/photos only load client-side after login, but the single og:image
+// still comes through server-rendered. Used as a fallback when the
+// site-specific gallery pattern above finds nothing, so a link that yields
+// no usable text can still contribute one real photo.
+function extractOgImage(html: string): string | null {
+  const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+  return match ? decodeHtmlEntities(match[1]) : null;
+}
+
 function extractSourceImages(html: string, max: number): string[] {
   const matches = html.match(OLX_GROUP_CDN_IMAGE_PATTERN) || [];
-  return [...new Set(matches)].slice(0, max);
+  const unique = [...new Set(matches)].slice(0, max);
+  if (unique.length > 0) return unique;
+
+  const ogImage = extractOgImage(html);
+  return ogImage ? [ogImage] : [];
 }
 
 function looksLikeUrl(text: string): boolean {
@@ -100,8 +125,15 @@ async function fetchPage(url: URL): Promise<{ text: string; images: string[] } |
     if (!res.ok) return null;
     const html = await res.text();
     const text = stripHtml(html);
-    if (text.length < 100) return null;
-    return { text, images: extractSourceImages(html, 3) };
+    const images = extractSourceImages(html, 3);
+    // A short page is normally a login wall / blocked fetch with nothing
+    // usable at all. But some sites (Facebook) render almost no text
+    // server-side yet still expose one real og:image - in that case surface
+    // what little text remains (often just the page <title>, which alone
+    // frequently names brand/model) plus the photo, rather than discarding
+    // a page that actually had something to offer.
+    if (text.length < 100 && images.length === 0) return null;
+    return { text, images };
   } catch {
     return null;
   }
@@ -161,7 +193,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    if (!sourceText && (!imageUrls || imageUrls.length === 0)) {
+    if (!sourceText && sourceImages.length === 0 && (!imageUrls || imageUrls.length === 0)) {
       return new Response(JSON.stringify(emptyResult()), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -176,8 +208,14 @@ Deno.serve(async (req: Request) => {
 
     const content: Record<string, unknown>[] = [];
 
-    if (imageUrls && imageUrls.length > 0) {
-      for (const imgUrl of imageUrls.slice(0, 5)) {
+    // Photos pulled from the source page (sourceImages) are shown to Claude
+    // too, not just returned to the frontend - useful when there's barely
+    // any text to go on (e.g. a Facebook post whose body never rendered
+    // server-side), so the model can still identify the vehicle by sight.
+    const imagesToAnalyze = [...sourceImages, ...(imageUrls || [])];
+
+    if (imagesToAnalyze.length > 0) {
+      for (const imgUrl of imagesToAnalyze.slice(0, 5)) {
         const image = await fetchImageAsBase64(imgUrl);
         if (image) {
           content.push({

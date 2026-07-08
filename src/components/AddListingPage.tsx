@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Upload, X, ImagePlus, Link } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Upload, X, ImagePlus, Sparkles } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { carBrands, carModels, motorcycleBrands, motorcycleModels, boatBrands, boatModels } from '../data/carData';
@@ -40,11 +40,14 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
   const [uploadingImages, setUploadingImages] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [fbUrl, setFbUrl] = useState('');
-  const [parsingFb, setParsingFb] = useState(false);
-  const [fbError, setFbError] = useState('');
-  const [fbText, setFbText] = useState('');
-  const [showTextInput, setShowTextInput] = useState(false);
+  const [smartInput, setSmartInput] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [needsManualPaste, setNeedsManualPaste] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set());
+  const touchedFieldsRef = useRef<Set<string>>(new Set());
+  const analyzeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAnalyzedImageCountRef = useRef(0);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -111,7 +114,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
       }));
 
       if (sourceUrl) {
-        setFbUrl(sourceUrl);
+        setSmartInput(sourceUrl);
       }
 
       const imagesParam = params.get('images');
@@ -140,15 +143,125 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     );
   }
 
+  useEffect(() => {
+    touchedFieldsRef.current = touchedFields;
+  }, [touchedFields]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    setTouchedFields((prev) => new Set(prev).add(name));
+    setAiFilledFields((prev) => {
+      if (!prev.has(name)) return prev;
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
     if (name === 'vehicleType') {
       setFormData((prev) => ({ ...prev, vehicleType: value, brand: '', model: '' }));
       return;
     }
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const applyAnalysisResult = (result: {
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    mileage: number | null;
+    vehicleType: string | null;
+    description: string | null;
+  }) => {
+    const filled: string[] = [];
+
+    setFormData((prev) => {
+      const next = { ...prev };
+
+      if (
+        result.vehicleType &&
+        !touchedFieldsRef.current.has('vehicleType') &&
+        BRANDS_BY_VEHICLE_TYPE[result.vehicleType]
+      ) {
+        next.vehicleType = result.vehicleType;
+        filled.push('vehicleType');
+      }
+      if (result.brand && !touchedFieldsRef.current.has('brand')) {
+        next.brand = result.brand;
+        filled.push('brand');
+      }
+      if (result.model && !touchedFieldsRef.current.has('model')) {
+        next.model = result.model;
+        filled.push('model');
+      }
+      if (result.year && !touchedFieldsRef.current.has('year')) {
+        next.year = result.year;
+        filled.push('year');
+      }
+      if (result.mileage && !touchedFieldsRef.current.has('mileage')) {
+        next.mileage = result.mileage.toString();
+        filled.push('mileage');
+      }
+      if (result.description && !touchedFieldsRef.current.has('description')) {
+        next.description = result.description;
+        filled.push('description');
+      }
+
+      return next;
+    });
+
+    if (filled.length > 0) {
+      setAiFilledFields((prev) => {
+        const next = new Set(prev);
+        filled.forEach((f) => next.add(f));
+        return next;
+      });
+    }
+  };
+
+  const runAnalysis = async (payload: { text?: string; imageUrls?: string[] }) => {
+    setAnalyzing(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const response = await fetch(`${supabaseUrl}/functions/v1/analyze-listing-input`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+
+      if (result.needsManualPaste) {
+        setNeedsManualPaste(true);
+        return;
+      }
+
+      setNeedsManualPaste(false);
+      applyAnalysisResult(result);
+    } catch {
+      // Silent failure by design - the form stays fully usable manually.
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleSmartInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setSmartInput(value);
+    setNeedsManualPaste(false);
+
+    if (analyzeTimerRef.current) {
+      clearTimeout(analyzeTimerRef.current);
+    }
+
+    if (!value.trim()) return;
+
+    analyzeTimerRef.current = setTimeout(() => {
+      runAnalysis({ text: value.trim() });
+    }, 1500);
   };
 
   const isFreeTextVehicleType = formData.vehicleType === 'inne';
@@ -280,219 +393,6 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     setDraggedIndex(null);
   };
 
-  const parseTextData = (text: string) => {
-    interface CarData {
-      title?: string;
-      brand?: string;
-      model?: string;
-      year?: number;
-      price?: number;
-      monthly_payment?: number;
-      remaining_payments?: number;
-      mileage?: number;
-      fuel_type?: string;
-      transmission?: string;
-      description?: string;
-      imageUrls?: string[];
-    }
-
-    const data: CarData = {};
-
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = text;
-    const imgElements = tempDiv.querySelectorAll('img');
-    const imageUrls: string[] = [];
-
-    imgElements.forEach(img => {
-      const src = img.src || img.getAttribute('src') || img.dataset.src;
-      if (src && (src.startsWith('http') || src.startsWith('//'))) {
-        const fullUrl = src.startsWith('//') ? 'https:' + src : src;
-        if (!imageUrls.includes(fullUrl)) {
-          imageUrls.push(fullUrl);
-        }
-      }
-    });
-
-    if (imageUrls.length > 0) {
-      data.imageUrls = imageUrls;
-    }
-
-    const brandModelPatterns = [
-      /(?:marka|brand|auto)[\s:]+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)\s+([A-ZĄĆĘŁŃÓŚŹŻ0-9][a-ząćęłńóśźż0-9\s-]+)/i,
-      /([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)\s+([A-ZĄĆĘŁŃÓŚŹŻ0-9][a-ząćęłńóśźż0-9\s-]+)\s+(?:rok|rocznik|r\.)/i,
-      /^([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)\s+([A-ZĄĆĘŁŃÓŚŹŻ0-9][a-ząćęłńóśźż0-9\s-]+)/m,
-    ];
-
-    for (const pattern of brandModelPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.brand = match[1].trim();
-        data.model = match[2].trim().split(/\s+/).slice(0, 3).join(' ');
-        break;
-      }
-    }
-
-    const yearPattern = /(?:rok|rocznik|r\.|z\s+roku)[\s:]*(\d{4})/i;
-    const yearMatch = text.match(yearPattern);
-    if (yearMatch) {
-      const year = parseInt(yearMatch[1]);
-      if (year >= 1990 && year <= new Date().getFullYear() + 1) {
-        data.year = year;
-      }
-    }
-
-    const pricePatterns = [
-      /(?:cena|price|koszt|wykup|wartość wykupu)[\s:]+(\d+[\s\.]?\d*)\s*(?:zł|pln|PLN)/i,
-      /wykup[\s:]+(\d+[\s\.]?\d*)/i,
-    ];
-    for (const pattern of pricePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.price = parseInt(match[1].replace(/[\s\.]/g, ''));
-        break;
-      }
-    }
-
-    const monthlyPaymentPatterns = [
-      /(?:rata|miesięczna|miesięcznie|płatność)[\s:]+(\d+[\s\.]?\d*)\s*(?:zł|pln|PLN)/i,
-      /(\d+[\s\.]?\d*)\s*(?:zł|pln|PLN)[\s\/]+(?:m-c|mc|miesiąc)/i,
-    ];
-    for (const pattern of monthlyPaymentPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        data.monthly_payment = parseInt(match[1].replace(/[\s\.]/g, ''));
-        break;
-      }
-    }
-
-    const remainingPattern = /(?:pozostało|pozostaje|zostało)[\s:]*(\d+)\s*(?:rat|miesięcy|m-cy)/i;
-    const remainingMatch = text.match(remainingPattern);
-    if (remainingMatch) {
-      data.remaining_payments = parseInt(remainingMatch[1]);
-    }
-
-    const mileagePatterns = [
-      /(?:przebieg|km|kilometry)[\s:]+(\d+[\s\.]?\d*)\s*(?:km|tysięcy)?/i,
-      /(\d+[\s\.]?\d*)\s*(?:km|tys\.?\s*km)/i,
-    ];
-    for (const pattern of mileagePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        let mileage = parseInt(match[1].replace(/[\s\.]/g, ''));
-        if (mileage < 1000) {
-          mileage *= 1000;
-        }
-        data.mileage = mileage;
-        break;
-      }
-    }
-
-    if (data.brand && data.model) {
-      data.title = `${data.brand} ${data.model}${data.year ? ` ${data.year}` : ''}`;
-    }
-
-    data.description = text.trim();
-
-    return data;
-  };
-
-  const parseFacebookPost = async () => {
-    if (showTextInput) {
-      if (!fbText.trim()) {
-        setFbError('Wklej treść posta');
-        return;
-      }
-
-      const data = parseTextData(fbText);
-
-      setFormData(prev => ({
-        ...prev,
-        title: data.title || prev.title,
-        brand: data.brand || prev.brand,
-        model: data.model || prev.model,
-        year: data.year || prev.year,
-        mileage: data.mileage?.toString() || prev.mileage,
-        monthlyPayment: data.monthly_payment?.toString() || prev.monthlyPayment,
-        buyoutPrice: data.price?.toString() || prev.buyoutPrice,
-        remainingInstallments: data.remaining_payments?.toString() || prev.remainingInstallments,
-        description: data.description || prev.description,
-      }));
-
-      if (data.imageUrls && data.imageUrls.length > 0) {
-        const imageInfo = data.imageUrls.map((url, i) => `\n${i + 1}. ${url}`).join('');
-        alert(`Dane zostały wczytane! Sprawdź pola.\n\nZnaleziono ${data.imageUrls.length} URL(e) zdjęć:${imageInfo}\n\nUWAGA: Zdjęcia z Facebooka są chronione i mogą nie działać. Najlepiej zapisz je ręcznie i prześlij poniżej.`);
-      } else {
-        alert('Dane zostały wczytane! Sprawdź pola i dodaj zdjęcia ręcznie - zapisz je z posta FB i prześlij poniżej.');
-      }
-
-      setFbText('');
-      setShowTextInput(false);
-      return;
-    }
-
-    if (!fbUrl.trim()) {
-      setFbError('Wprowadź URL do posta na Facebooku');
-      return;
-    }
-
-    setParsingFb(true);
-    setFbError('');
-
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/parse-facebook-post`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: fbUrl }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || result.error) {
-        setFbError('Nie udało się pobrać posta. Post może być prywatny lub z zamkniętej grupy.');
-        setShowTextInput(true);
-        setParsingFb(false);
-        return;
-      }
-
-      if (result.data) {
-        const data = result.data;
-
-        setFormData(prev => ({
-          ...prev,
-          title: data.title || prev.title,
-          brand: data.brand || prev.brand,
-          model: data.model || prev.model,
-          year: data.year || prev.year,
-          mileage: data.mileage?.toString() || prev.mileage,
-          monthlyPayment: data.monthly_payment?.toString() || prev.monthlyPayment,
-          buyoutPrice: data.price?.toString() || prev.buyoutPrice,
-          remainingInstallments: data.remaining_payments?.toString() || prev.remainingInstallments,
-          description: data.description || prev.description,
-        }));
-
-        if (data.images && data.images.length > 0) {
-          const fbImages = data.images.map(url => ({ type: 'url' as const, value: url }));
-          setImages(prev => [...prev, ...fbImages]);
-        }
-
-        setFbUrl('');
-        alert('Dane z Facebooka zostały wczytane! Sprawdź i uzupełnij brakujące pola.');
-      }
-    } catch (err: any) {
-      console.error('Error parsing Facebook post:', err);
-      setFbError('Nie udało się pobrać posta. Spróbuj skopiować treść ręcznie.');
-      setShowTextInput(true);
-    } finally {
-      setParsingFb(false);
-    }
-  };
-
   const triggerMarketValueEstimate = (listingId: string, brand: string, model: string, year: number, mileage: number | null, priceType: string) => {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/estimate-car-value`;
     fetch(url, {
@@ -600,78 +500,38 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
         {!editingListing && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Link size={20} className="text-blue-600" />
-              Szybkie dodawanie z Facebooka
+              <Sparkles size={20} className="text-blue-600" />
+              Szybkie wypełnianie
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              {showTextInput
-                ? 'Skopiuj treść posta z Facebooka i wklej poniżej. Zdjęcia dodasz ręcznie poniżej.'
-                : 'Wklej link do posta z Facebooka lub skopiuj treść ręcznie:'}
+              Wklej link do ogłoszenia (Otomoto, OLX, Gratka, Facebook) lub treść ogłoszenia
+              — spróbujemy automatycznie wypełnić markę, model, rok, przebieg i opis.
             </p>
 
-            {showTextInput ? (
-              <div className="space-y-2">
-                <textarea
-                  value={fbText}
-                  onChange={(e) => setFbText(e.target.value)}
-                  placeholder="Wklej treść posta z Facebooka tutaj..."
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={parseFacebookPost}
-                    disabled={!fbText.trim()}
-                    className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-semibold"
-                  >
-                    Wypełnij formularz
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowTextInput(false);
-                      setFbText('');
-                      setFbError('');
-                    }}
-                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  >
-                    Anuluj
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={fbUrl}
-                    onChange={(e) => setFbUrl(e.target.value)}
-                    placeholder="https://facebook.com/..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={parsingFb}
-                  />
-                  <button
-                    type="button"
-                    onClick={parseFacebookPost}
-                    disabled={parsingFb || !fbUrl.trim()}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-semibold whitespace-nowrap"
-                  >
-                    {parsingFb ? 'Pobieranie...' : 'Wypełnij'}
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowTextInput(true)}
-                  className="text-sm text-blue-600 hover:text-blue-700 underline"
-                >
-                  Lub wklej treść posta ręcznie
-                </button>
-              </div>
+            <textarea
+              value={smartInput}
+              onChange={handleSmartInputChange}
+              placeholder="https://www.otomoto.pl/... lub wklejona treść ogłoszenia"
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            {analyzing && (
+              <p className="mt-2 text-sm text-blue-600">Analizuję...</p>
             )}
 
-            {fbError && (
-              <p className="mt-2 text-sm text-red-600">{fbError}</p>
+            {needsManualPaste && !analyzing && (
+              <p className="mt-2 text-sm text-amber-700">
+                Nie udało się pobrać tej strony (częste dla Facebooka) — wklej treść
+                ogłoszenia ręcznie w polu powyżej zamiast linku.
+              </p>
+            )}
+
+            {aiFilledFields.size > 0 && (
+              <p className="mt-2 text-sm text-amber-700">
+                Wypełniliśmy automatycznie pola oznaczone bursztynową ramką poniżej —
+                sprawdź je przed zapisaniem.
+              </p>
             )}
           </div>
         )}

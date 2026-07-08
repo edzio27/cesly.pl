@@ -222,6 +222,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
     remainingInstallments?: number | null;
     totalInstallments?: number | null;
     priceType?: string | null;
+    sourceImages?: string[];
   }) => {
     const filled: string[] = [];
 
@@ -299,6 +300,18 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
         filled.forEach((f) => next.add(f));
         return next;
       });
+    }
+
+    // Photos pulled from a pasted listing URL (Otomoto/OLX) only ever get
+    // added when the seller hasn't uploaded/added any photos of their own
+    // yet - never mixed in behind their back once they've started their own
+    // gallery.
+    if (result.sourceImages && result.sourceImages.length > 0) {
+      setImages((prev) =>
+        prev.length === 0
+          ? result.sourceImages!.map((url) => ({ type: 'url' as const, value: url }))
+          : prev
+      );
     }
   };
 

@@ -21,6 +21,7 @@ interface AnalyzeResult {
   remainingInstallments: number | null;
   totalInstallments: number | null;
   priceType: string | null;
+  sourceImages: string[];
   needsManualPaste?: true;
 }
 
@@ -38,7 +39,24 @@ function emptyResult(): AnalyzeResult {
     remainingInstallments: null,
     totalInstallments: null,
     priceType: null,
+    sourceImages: [],
   };
+}
+
+// Otomoto and OLX.pl (same parent company, OLX Group) serve every listing
+// photo from this CDN, both in the visible gallery and in duplicated
+// thumbnail/meta-tag copies elsewhere on the page. Matching this pattern in
+// the raw HTML (before stripping tags) reliably recovers the real photo set
+// in gallery order - verified against a live Otomoto listing where this
+// produced exactly the same 39 URLs, in the same order, as the page's own
+// embedded gallery data. Other allow-listed domains (Gratka, Facebook) use
+// different CDNs this doesn't match, so they simply yield no photos - an
+// expected, non-fatal degradation, not an error.
+const OLX_GROUP_CDN_IMAGE_PATTERN = /https:\/\/ireland\.apollo\.olxcdn\.com\/v1\/files\/[A-Za-z0-9._-]+\/image/g;
+
+function extractSourceImages(html: string, max: number): string[] {
+  const matches = html.match(OLX_GROUP_CDN_IMAGE_PATTERN) || [];
+  return [...new Set(matches)].slice(0, max);
 }
 
 function looksLikeUrl(text: string): boolean {
@@ -69,7 +87,7 @@ function stripHtml(html: string): string {
     .slice(0, 8000);
 }
 
-async function fetchPageText(url: URL): Promise<string | null> {
+async function fetchPage(url: URL): Promise<{ text: string; images: string[] } | null> {
   try {
     const res = await fetch(url.toString(), {
       headers: {
@@ -81,7 +99,7 @@ async function fetchPageText(url: URL): Promise<string | null> {
     const html = await res.text();
     const text = stripHtml(html);
     if (text.length < 100) return null;
-    return text;
+    return { text, images: extractSourceImages(html, 3) };
   } catch {
     return null;
   }
@@ -116,6 +134,7 @@ Deno.serve(async (req: Request) => {
     };
 
     let sourceText = "";
+    let sourceImages: string[] = [];
 
     if (text && text.trim()) {
       if (looksLikeUrl(text)) {
@@ -126,14 +145,15 @@ Deno.serve(async (req: Request) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-        const pageText = await fetchPageText(allowedUrl);
-        if (!pageText) {
+        const page = await fetchPage(allowedUrl);
+        if (!page) {
           return new Response(
             JSON.stringify({ ...emptyResult(), needsManualPaste: true }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-        sourceText = pageText;
+        sourceText = page.text;
+        sourceImages = page.images;
       } else {
         sourceText = text.trim();
       }
@@ -171,7 +191,7 @@ Deno.serve(async (req: Request) => {
 
 Zasady:
 - "mileage" to przebieg w kilometrach jako liczba całkowita (np. odczytana z licznika na zdjęciu deski rozdzielczej), bez jednostek.
-- "description" to krótki (2-4 zdania), naturalny opis pojazdu po polsku na podstawie dostępnych informacji - stanu, wyposażenia, widocznych cech. Nie wymyślaj warunków finansowych - to osobne pola poniżej.
+- "description" to ORYGINALNY opis ogłoszenia, PRZEPISANY DOSŁOWNIE (nie streszczaj, nie skracaj, nie parafrazuj) - zachowaj wszystkie szczegóły, które sprzedający napisał. Jeśli podany tekst to cała strona internetowa (np. pobrana z Otomoto/OLX), znajdź w niej właściwy opis ogłoszenia i przepisz TYLKO tę część, pomijając menu strony, reklamy, stopkę i inne elementy niezwiązane z opisem pojazdu. Usuń z przepisanego tekstu wszelkie dane kontaktowe sprzedającego z tamtego ogłoszenia (numery telefonu, adresy e-mail, linki) - to nie powinno trafić do nowego ogłoszenia. Jeśli nie da się sensownie wyodrębnić opisu, zwróć null.
 - "monthlyPayment" (rata miesięczna), "transferFee" (odstępne za przejęcie umowy), "buyoutPrice" (cena/wartość wykupu), "remainingInstallments" (liczba pozostałych rat do spłaty), "totalInstallments" (całkowita liczba rat w umowie) i "priceType" (czy podane kwoty są netto czy brutto) WYCIĄGAJ WYŁĄCZNIE jeśli są DOSŁOWNIE i JAWNIE podane w tekście jako konkretne liczby/wartości. NIGDY ich nie zgaduj, nie szacuj i nie oblicz na podstawie innych danych (np. na podstawie marki/modelu/roku). Jeśli tekst nie zawiera wprost takiej informacji (np. bo źródłem jest zwykłe ogłoszenie sprzedaży samochodu bez wzmianki o leasingu), zwróć null dla tych pól - to oczekiwany, częsty wynik.
 - Jeśli czegoś nie da się ustalić, użyj null dla tego pola.
 - Nie dodawaj żadnego wyjaśnienia ani markdown - tylko sam obiekt JSON.
@@ -189,7 +209,7 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 500,
+        max_tokens: 2000,
         messages: [{ role: "user", content }],
       }),
     });
@@ -227,6 +247,7 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
         typeof parsed.totalInstallments === "number" ? parsed.totalInstallments : null,
       priceType:
         parsed.priceType === "netto" || parsed.priceType === "brutto" ? parsed.priceType : null,
+      sourceImages,
     };
 
     return new Response(JSON.stringify(out), {

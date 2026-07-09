@@ -59,6 +59,33 @@ const FAQ_ITEMS = [
   },
 ];
 
+function AnimatedCounter({ target, prefix = '' }: { target: number; prefix?: string }) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setValue(target);
+      return;
+    }
+
+    const duration = 1200;
+    const start = performance.now();
+    let raf: number;
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(target * eased));
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+
+  return <>{prefix}{value}</>;
+}
+
 function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -355,11 +382,11 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
             <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold">+120 aktywnych ogłoszeń</span>
+                <span className="font-semibold"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>
               </div>
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold">+500 użytkowników</span>
+                <span className="font-semibold"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
               </div>
             </div>
           </div>
@@ -655,6 +682,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
                 key={listing.id}
                 listing={listing}
                 priority={currentPage === 1 && index < 4}
+                index={index}
                 onView={() => onViewListing(listing.id)}
               />
             ))}

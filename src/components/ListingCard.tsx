@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star, Calendar, TrendingUp } from 'lucide-react';
 import { Listing } from '../lib/supabase';
 import { trackListingClick } from '../utils/analytics';
@@ -8,6 +8,7 @@ type ListingCardProps = {
   listing: Listing;
   onView: () => void;
   priority?: boolean;
+  index?: number;
 };
 
 function ScoreBadge({ deal }: { deal: DealScoreBreakdown }) {
@@ -40,12 +41,13 @@ function StarRating({ score }: { score: number }) {
   );
 }
 
-export function ListingCard({ listing, onView, priority = false }: ListingCardProps) {
+export function ListingCard({ listing, onView, priority = false, index = 0 }: ListingCardProps) {
   const mainImage = listing.images && listing.images.length > 0
     ? listing.images[0]
     : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
 
   const deal = calculateDealScore(listing);
+  const [imageLoaded, setImageLoaded] = useState(priority);
 
   const handleClick = (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
@@ -58,7 +60,8 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
     <a
       href={`/listing/${listing.id}`}
       onClick={handleClick}
-      className="group block bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300"
+      style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
+      className="group block bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300 motion-safe:animate-fade-in-up"
     >
       {listing.is_promoted && (
         <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-2 py-1 text-xs font-bold flex items-center">
@@ -74,7 +77,9 @@ export function ListingCard({ listing, onView, priority = false }: ListingCardPr
           loading={priority ? 'eager' : 'lazy'}
           // @ts-expect-error React 18 types don't include fetchpriority yet; lowercase name is required for React to pass it through as-is
           fetchpriority={priority ? 'high' : 'auto'}
-          className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(true)}
+          className={`w-full h-full object-cover object-center group-hover:scale-110 transition-[opacity,transform] duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
         <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center">

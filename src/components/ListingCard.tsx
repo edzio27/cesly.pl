@@ -61,7 +61,7 @@ export function ListingCard({ listing, onView, priority = false, index = 0 }: Li
       href={`/listing/${listing.id}`}
       onClick={handleClick}
       style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
-      className="group block bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300 motion-safe:animate-fade-in-up"
+      className="group block bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-2xl hover:shadow-amber-500/25 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:-translate-y-1.5 hover:scale-[1.02] duration-300 motion-safe:animate-fade-in-up"
     >
       {listing.is_promoted && (
         <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-2 py-1 text-xs font-bold flex items-center">
@@ -82,6 +82,11 @@ export function ListingCard({ listing, onView, priority = false, index = 0 }: Li
           className={`w-full h-full object-cover object-center group-hover:scale-110 transition-[opacity,transform] duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/0 group-hover:bg-gray-900/20 transition-colors duration-300">
+          <span className="opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 bg-white/95 text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+            Zobacz ofertę →
+          </span>
+        </div>
         <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center">
           <span className="text-amber-600 text-[10px] font-bold uppercase tracking-wide">
             {listing.vehicle_type}

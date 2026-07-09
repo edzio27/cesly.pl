@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check, Bookmark } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
+import { FeaturedCarousel } from './FeaturedCarousel';
+import { calculateDealScore } from '../utils/dealScore';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -162,6 +164,13 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
   });
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  const featuredListings = useMemo(() => {
+    if (currentPage !== 1) return [];
+    return listings
+      .filter((listing) => listing.is_promoted || (calculateDealScore(listing)?.score ?? 0) >= 8)
+      .slice(0, 8);
+  }, [listings, currentPage]);
 
   useEffect(() => {
     document.title = 'Cesly.pl – Cesja leasingu i przejęcie umowy leasingowej';
@@ -670,6 +679,10 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         </div>
       ) : (
         <>
+          {featuredListings.length > 0 && (
+            <FeaturedCarousel listings={featuredListings} onViewListing={onViewListing} />
+          )}
+
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
             <span className="text-sm text-gray-600">

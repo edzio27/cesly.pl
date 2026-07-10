@@ -3,6 +3,7 @@ import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trendi
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { FeaturedCarousel } from './FeaturedCarousel';
+import { Logo } from './Logo';
 import { calculateDealScore } from '../utils/dealScore';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
@@ -375,31 +376,57 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-amber-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 text-center">
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-navy to-[#070811]">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-10 left-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <svg
+          className="absolute inset-x-0 bottom-0 w-full h-24 md:h-32 text-white/[0.06]"
+          viewBox="0 0 1200 160"
+          preserveAspectRatio="none"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <rect x="20" y="70" width="60" height="90" />
+          <rect x="100" y="40" width="50" height="120" />
+          <rect x="170" y="90" width="45" height="70" />
+          <rect x="240" y="20" width="55" height="140" />
+          <rect x="320" y="60" width="60" height="100" />
+          <rect x="410" y="35" width="50" height="125" />
+          <rect x="480" y="80" width="40" height="80" />
+          <rect x="540" y="10" width="65" height="150" />
+          <rect x="630" y="55" width="55" height="105" />
+          <rect x="710" y="30" width="50" height="130" />
+          <rect x="780" y="85" width="45" height="75" />
+          <rect x="850" y="45" width="60" height="115" />
+          <rect x="930" y="65" width="50" height="95" />
+          <rect x="1000" y="25" width="55" height="135" />
+          <rect x="1080" y="75" width="45" height="85" />
+          <rect x="1140" y="50" width="50" height="110" />
+        </svg>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 text-center">
           <div className="inline-block mb-4">
-            <img
-              src="/cesly_logo_fixed.png"
-              alt="Cesly.pl"
-              className="h-16 md:h-20 mx-auto"
-            />
+            <Logo size={72} className="mx-auto" />
           </div>
           <div className="space-y-3">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
               Największa baza cesji leasingów w Polsce
             </h1>
-            <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
+            <div className="flex items-center justify-center gap-8 text-sm text-gray-300">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>
+                <TrendingUp className="w-5 h-5 text-amber-400" />
+                <span className="font-semibold text-white"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
+                <Users className="w-5 h-5 text-amber-400" />
+                <span className="font-semibold text-white"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
               </div>
             </div>
           </div>
         </div>
+      </section>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Compact strip on mobile so search + listings aren't pushed below the fold */}
         <div className="md:hidden flex items-center justify-around bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 mb-6 text-center">

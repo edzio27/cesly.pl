@@ -41,6 +41,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               className="flex items-center space-x-3 group"
             >
               <Logo size={40} className="transition-transform group-hover:scale-105 duration-300" />
+              <span className="text-lg font-bold text-white">Cesly.pl</span>
             </button>
 
             <div className="hidden md:flex items-center space-x-3">

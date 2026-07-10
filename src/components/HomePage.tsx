@@ -405,8 +405,9 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         </svg>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 text-center">
-          <div className="inline-block mb-4">
-            <Logo size={72} className="mx-auto" />
+          <div className="inline-flex flex-col items-center gap-2 mb-4">
+            <Logo size={72} />
+            <span className="text-2xl font-bold text-white">Cesly.pl</span>
           </div>
           <div className="space-y-3">
             <h1 className="text-2xl md:text-3xl font-bold text-white">

@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://cesly.pl/cesly_logo_final.png</image:loc>
+      <image:loc>https://cesly.pl/og-image.png</image:loc>
       <image:title>Cesly.pl - Cesja leasingu</image:title>
       <image:caption>Portal ogłoszeń cesji i przejęcia leasingu samochodów</image:caption>
     </image:image>

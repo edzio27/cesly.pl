@@ -3,6 +3,10 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      colors: {
+        'brand-navy': '#0E1023',
+        'brand-blue': '#2453C4',
+      },
       keyframes: {
         fadeInUp: {
           '0%': { opacity: '0', transform: 'translateY(12px)' },

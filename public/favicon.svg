@@ -1,16 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
   <defs>
     <linearGradient id="cesly-arrow-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2563EB" />
-      <stop offset="100%" stop-color="#22D3EE" />
+      <stop offset="0%" stop-color="#193CB4" />
+      <stop offset="100%" stop-color="#64AAFA" />
     </linearGradient>
   </defs>
   <path
-    d="M 7 31 C 9 18, 15 11, 24 9"
+    d="M 15 17.5 C 19.5 16, 23.5 14, 27 12.5"
     fill="none"
     stroke="url(#cesly-arrow-gradient)"
-    stroke-width="5"
+    stroke-width="3.6"
     stroke-linecap="round"
   />
-  <polygon points="33,6 22,7.5 28,18" fill="url(#cesly-arrow-gradient)" />
+  <path
+    d="M 35.5 7.5 L 35.8 12.8 L 27.5 13.3 Q 30.5 11.3 27 9.2 Z"
+    fill="url(#cesly-arrow-gradient)"
+  />
 </svg>

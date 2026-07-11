@@ -15,18 +15,18 @@ export function Logo({ size = 40, className = '' }: LogoProps) {
     >
       <defs>
         <linearGradient id="cesly-arrow-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#2563EB" />
-          <stop offset="100%" stopColor="#22D3EE" />
+          <stop offset="0%" stopColor="#1D4ED8" />
+          <stop offset="100%" stopColor="#60A5FA" />
         </linearGradient>
       </defs>
       <path
-        d="M 7 31 C 9 18, 15 11, 24 9"
+        d="M 5 30 C 9 17, 17 9, 24 9"
         fill="none"
         stroke="url(#cesly-arrow-gradient)"
-        strokeWidth="5"
+        strokeWidth="4.5"
         strokeLinecap="round"
       />
-      <polygon points="33,6 22,7.5 28,18" fill="url(#cesly-arrow-gradient)" />
+      <polygon points="36,6 22,5.5 27,17" fill="url(#cesly-arrow-gradient)" />
     </svg>
   );
 }

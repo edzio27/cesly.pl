@@ -13,14 +13,20 @@ export function Logo({ size = 40, className = '' }: LogoProps) {
       role="img"
       aria-label="Cesly.pl"
     >
-      <circle cx="20" cy="20" r="20" fill="#2453C4" />
+      <defs>
+        <linearGradient id="cesly-arrow-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#2563EB" />
+          <stop offset="100%" stopColor="#22D3EE" />
+        </linearGradient>
+      </defs>
       <path
-        d="M 27.37 25.16 A 9 9 0 1 1 27.37 14.84"
+        d="M 7 31 C 9 18, 15 11, 24 9"
         fill="none"
-        stroke="white"
-        strokeWidth="6"
+        stroke="url(#cesly-arrow-gradient)"
+        strokeWidth="5"
         strokeLinecap="round"
       />
+      <polygon points="33,6 22,7.5 28,18" fill="url(#cesly-arrow-gradient)" />
     </svg>
   );
 }

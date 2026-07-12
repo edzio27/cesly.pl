@@ -21,7 +21,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "([Bb][Oo][Tt]|[Cc]rawler|[Ss]pider|[Ff]acebook|[Tt]witter|[Ll]inked[Ii]n|[Ww]hats[Aa]pp|[Tt]elegram|[Ss]lack|[Dd]iscord|[Ss]kype|[Aa]nthropic|[Cc]ohere|[Cc]hat[Gg][Pp][Tt]|[Pp]interest)"
+          "value": ".*([Bb][Oo][Tt]|[Cc]rawler|[Ss]pider|[Ff]acebook|[Tt]witter|[Ll]inked[Ii]n|[Ww]hats[Aa]pp|[Tt]elegram|[Ss]lack|[Dd]iscord|[Ss]kype|[Aa]nthropic|[Cc]ohere|[Cc]hat[Gg][Pp][Tt]|[Pp]interest).*"
         }
       ],
       "destination": "https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/og-meta?id=:id"

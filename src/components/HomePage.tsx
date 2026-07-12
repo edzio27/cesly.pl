@@ -376,7 +376,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-amber-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-navy to-[#070811]">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy to-brand-navy-light">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute top-10 left-1/4 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <svg

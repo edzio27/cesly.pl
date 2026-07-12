@@ -4,7 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        'brand-navy': '#0F172A',
+        'brand-navy': '#12163A',
+        'brand-navy-light': '#383C6E',
         'brand-blue': '#2563EB',
         'brand-cyan': '#22D3EE',
         // Redefined to Tailwind's own `slate` scale so gray-900 lands
@@ -24,39 +25,37 @@ export default {
           900: '#0f172a',
           950: '#020617',
         },
-        // Shifted one step from Tailwind's `yellow` scale so amber-500
+        // Replaced with the orange from the new car logo - amber-500
         // (the shade used for solid CTA buttons/badges throughout the
-        // app) lands exactly on the brand's Warning gold (#FACC15).
+        // app) lands on that exact orange.
         amber: {
-          50: '#fefce8',
-          100: '#fef9c3',
-          200: '#fef08a',
-          300: '#fde047',
-          400: '#fde047',
-          500: '#facc15',
-          600: '#eab308',
-          700: '#ca8a04',
-          800: '#a16207',
-          900: '#854d0e',
-          950: '#713f12',
+          50: '#fdf1ea',
+          100: '#fbe1d2',
+          200: '#f6c3a5',
+          300: '#f0a374',
+          400: '#e68249',
+          500: '#d9622f',
+          600: '#b94e23',
+          700: '#953d1b',
+          800: '#742f15',
+          900: '#56220f',
+          950: '#38160a',
         },
-        // Shifted from the *old* pre-rebrand amber scale so gradients
-        // like "from-amber-500 to-orange-500" read as bright gold ->
-        // deep gold, not a jump to a clashing true orange hue (the
-        // brand guide doesn't define an orange; this keeps the
-        // existing gradient direction coherent with the new palette).
+        // One step darker than amber, same orange family, so gradients
+        // like "from-amber-500 to-orange-500" stay within the new
+        // brand hue instead of jumping to gold/yellow.
         orange: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#d97706',
-          600: '#b45309',
-          700: '#92400e',
-          800: '#78350f',
-          900: '#451a03',
-          950: '#451a03',
+          50: '#fbe1d2',
+          100: '#f6c3a5',
+          200: '#f0a374',
+          300: '#e68249',
+          400: '#d9622f',
+          500: '#b94e23',
+          600: '#953d1b',
+          700: '#742f15',
+          800: '#56220f',
+          900: '#38160a',
+          950: '#240e06',
         },
         // Redefined to Tailwind's `green` scale so emerald-600 (used
         // for the deal-score "positive" badge) lands exactly on the
@@ -79,7 +78,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Urbanist',
+          'Inter',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',

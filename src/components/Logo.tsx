@@ -3,26 +3,18 @@ type LogoProps = {
   className?: string;
 };
 
+// Cropped directly from the user's own logo file (car + speed lines,
+// keyed out of its navy background) so the on-site mark is pixel-exact
+// to the source rather than a hand-redrawn approximation.
+const ASPECT_RATIO = 329 / 148;
+
 export function Logo({ size = 40, className = '' }: LogoProps) {
   return (
-    <svg
-      viewBox="0 0 40 40"
-      width={size}
-      height={size}
+    <img
+      src="/car-icon.png"
+      alt="Cesly.pl"
       className={className}
-      role="img"
-      aria-label="Cesly.pl"
-    >
-      <rect x="2" y="15.3" width="13" height="1.4" fill="#D9622F" />
-      <rect x="4" y="12.3" width="9" height="1.4" fill="#D9622F" />
-      <rect x="6" y="9.3" width="5" height="1.4" fill="#D9622F" />
-      <path
-        d="M 13 17 L 17 10 L 24 10 L 27 17 Z"
-        fill="#D9622F"
-      />
-      <rect x="9" y="17" width="21" height="8" rx="2.5" fill="#D9622F" />
-      <circle cx="14" cy="26" r="2.8" fill="#12163A" />
-      <circle cx="26" cy="26" r="2.8" fill="#12163A" />
-    </svg>
+      style={{ height: size, width: size * ASPECT_RATIO }}
+    />
   );
 }

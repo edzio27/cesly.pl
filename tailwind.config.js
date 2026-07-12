@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        'brand-navy': '#12163A',
-        'brand-navy-light': '#383C6E',
+        'brand-navy': '#020636',
+        'brand-navy-light': '#404367',
         'brand-blue': '#2563EB',
         'brand-cyan': '#22D3EE',
         // Redefined to Tailwind's own `slate` scale so gray-900 lands
@@ -34,7 +34,7 @@ export default {
           200: '#f6c3a5',
           300: '#f0a374',
           400: '#e68249',
-          500: '#d9622f',
+          500: '#d55d3f',
           600: '#b94e23',
           700: '#953d1b',
           800: '#742f15',
@@ -49,7 +49,7 @@ export default {
           100: '#f6c3a5',
           200: '#f0a374',
           300: '#e68249',
-          400: '#d9622f',
+          400: '#d55d3f',
           500: '#b94e23',
           600: '#953d1b',
           700: '#742f15',

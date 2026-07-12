@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/listing/:id",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",

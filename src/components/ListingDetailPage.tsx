@@ -547,15 +547,15 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
               </div>
 
               {images.length > 1 && (
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-6 gap-3">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`aspect-square rounded overflow-hidden border-2 transition ${
+                      className={`aspect-square rounded-lg overflow-hidden transition ${
                         currentImageIndex === idx
-                          ? 'border-blue-600'
-                          : 'border-gray-200 hover:border-gray-400'
+                          ? 'ring-2 ring-amber-500 ring-offset-2'
+                          : 'border-2 border-gray-200 hover:border-gray-400'
                       }`}
                     >
                       <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />

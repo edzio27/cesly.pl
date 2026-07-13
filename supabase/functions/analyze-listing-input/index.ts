@@ -215,8 +215,10 @@ Deno.serve(async (req: Request) => {
     const imagesToAnalyze = [...sourceImages, ...(imageUrls || [])];
 
     if (imagesToAnalyze.length > 0) {
-      for (const imgUrl of imagesToAnalyze.slice(0, 5)) {
-        const image = await fetchImageAsBase64(imgUrl);
+      const fetched = await Promise.all(
+        imagesToAnalyze.slice(0, 5).map((imgUrl) => fetchImageAsBase64(imgUrl))
+      );
+      for (const image of fetched) {
         if (image) {
           content.push({
             type: "image",
@@ -227,7 +229,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const promptText = `Na podstawie poniższych informacji (tekst ogłoszenia i/lub zdjęcia pojazdu) wyodrębnij dane pojazdu. Odpowiedz WYŁĄCZNIE czystym obiektem JSON, bez żadnego dodatkowego tekstu, w formacie:
-{"title": string|null, "brand": string|null, "model": string|null, "year": number|null, "mileage": number|null, "vehicleType": "samochód"|"motocykl"|"łódź"|null, "description": string|null, "monthlyPayment": number|null, "transferFee": number|null, "buyoutPrice": number|null, "remainingInstallments": number|null, "totalInstallments": number|null, "priceType": "netto"|"brutto"|null}
+{"title": string|null, "brand": string|null, "model": string|null, "year": number|null, "mileage": number|null, "vehicleType": "samochód"|"motocykl"|"łódź"|null, "monthlyPayment": number|null, "transferFee": number|null, "buyoutPrice": number|null, "remainingInstallments": number|null, "totalInstallments": number|null, "priceType": "netto"|"brutto"|null, "description": string|null}
+
+WAŻNE: "description" MUSI być ostatnim polem w obiekcie JSON, dokładnie w tej kolejności co powyżej - dzięki temu, jeśli opis jest bardzo długi, wszystkie pozostałe pola i tak zdążą się w pełni wygenerować przed nim.
 
 Zasady:
 - "title" to krótki, zwięzły tytuł ogłoszenia po polsku, w stylu "Marka Model Rok - cesja leasingu" (np. "BMW Seria 8 M850i xDrive 2019 - cesja leasingu") - użyj konkretnej wersji/trimu jeśli jest znana, żeby tytuł wyróżniał się na tle innych ogłoszeń tej samej marki i modelu.
@@ -250,7 +254,7 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 2000,
+        max_tokens: 4096,
         messages: [{ role: "user", content }],
       }),
     });
@@ -269,7 +273,17 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
     } catch {
-      parsed = {};
+      // "description" is deliberately the last key in the schema above, so
+      // if the response got cut off mid-generation (very long listing text
+      // hitting max_tokens), every other field already finished generating
+      // before the cutoff. Salvage them by closing the object right before
+      // the dangling "description" key instead of discarding everything.
+      try {
+        const truncated = raw.replace(/,\s*"description"\s*:\s*"[^]*$/, "}");
+        parsed = JSON.parse(truncated);
+      } catch {
+        parsed = {};
+      }
     }
 
     const out: AnalyzeResult = {

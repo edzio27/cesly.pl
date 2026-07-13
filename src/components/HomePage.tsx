@@ -39,6 +39,13 @@ const PRICE_RANGE_PRESETS: { label: string; min: string; max: string }[] = [
   { label: '3000 zł i więcej', min: '3000', max: '' },
 ];
 
+const HOW_IT_WORKS_STEPS: { title: string; description: string }[] = [
+  { title: 'Znajdź ofertę', description: 'Przeglądaj aktywne ogłoszenia cesji leasingu dopasowane do Twojego budżetu' },
+  { title: 'Skontaktuj się', description: 'Napisz do właściciela przez wiadomości w serwisie' },
+  { title: 'Uzgodnij warunki', description: 'Z obecnym leasingobiorcą i leasingodawcą' },
+  { title: 'Podpisz cesję', description: 'Leasingodawca zatwierdza, umowa przechodzi na Ciebie' },
+];
+
 const FAQ_ITEMS = [
   {
     question: 'Czym jest cesja leasingu?',
@@ -392,6 +399,23 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
               <Users className="w-5 h-5 text-amber-400" />
               <span className="font-semibold text-white"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 text-center">Jak to działa</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOW_IT_WORKS_STEPS.map((step, index) => (
+              <div key={step.title} className="text-center">
+                <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-500 text-white font-bold rounded-full mb-3">
+                  {index + 1}
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1.5">{step.title}</h3>
+                <p className="text-xs text-gray-600">{step.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

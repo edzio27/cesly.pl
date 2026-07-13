@@ -738,7 +738,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         </>
       )}
 
-      <div className="mt-16 space-y-12">
+      <div className="mt-12 space-y-8">
         <section className="bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 md:p-8">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">Czym jest cesja leasingu?</h2>
           <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">

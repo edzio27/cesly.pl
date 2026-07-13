@@ -377,12 +377,12 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
       </div>
 
       <section className="relative overflow-hidden bg-gradient-to-tr from-brand-navy to-brand-navy-light">
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 flex flex-col items-center">
-          <img
-            src="/hero-bg.png"
-            alt="Cesly.pl – Cesje i najmy. Przejmij leasing, zyskaj więcej."
-            className="w-full max-w-md md:max-w-xl h-auto"
-          />
+        <img
+          src="/hero-bg.png"
+          alt="Cesly.pl – Cesje i najmy. Przejmij leasing, zyskaj więcej."
+          className="w-full h-auto block"
+        />
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex flex-col items-center">
           <div className="flex items-center gap-8 text-sm bg-black/30 backdrop-blur-sm rounded-full px-6 py-2.5 mt-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-amber-400" />

@@ -208,7 +208,7 @@ function App() {
         {currentPage === 'polityka-prywatnosci' && <PolitykaPrywatnosciPage />}
       </Suspense>
 
-      <Footer onNavigate={handleNavigate} />
+      <Footer onNavigate={handleNavigate} onApplyFilters={handleApplySavedSearch} />
       <CookieConsentBanner />
     </div>
   );

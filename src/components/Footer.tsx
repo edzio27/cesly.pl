@@ -2,9 +2,10 @@ import { Facebook } from 'lucide-react';
 
 type FooterProps = {
   onNavigate: (page: string) => void;
+  onApplyFilters: (filters: Record<string, string>) => void;
 };
 
-export function Footer({ onNavigate }: FooterProps) {
+export function Footer({ onNavigate, onApplyFilters }: FooterProps) {
   const goTo = (page: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     onNavigate(page);
@@ -12,12 +13,33 @@ export function Footer({ onNavigate }: FooterProps) {
 
   return (
     <footer className="bg-brand-navy text-gray-300 mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         <div>
           <h3 className="text-white font-bold text-lg mb-2">Cesly.pl</h3>
           <p className="text-sm text-gray-400">
             Największa baza ogłoszeń cesji i przejęcia leasingu samochodów w Polsce.
           </p>
+        </div>
+
+        <div>
+          <h4 className="text-white font-semibold mb-2">Popularne kategorie</h4>
+          <ul className="space-y-1 text-sm">
+            <li>
+              <button onClick={() => onApplyFilters({ vehicleType: 'samochód' })} className="hover:text-amber-400 transition-colors">
+                Cesja leasingu samochodu
+              </button>
+            </li>
+            <li>
+              <button onClick={() => onApplyFilters({ vehicleType: 'motocykl' })} className="hover:text-amber-400 transition-colors">
+                Cesja leasingu motocykla
+              </button>
+            </li>
+            <li>
+              <button onClick={() => onApplyFilters({ vehicleType: 'łódź' })} className="hover:text-amber-400 transition-colors">
+                Cesja leasingu łodzi
+              </button>
+            </li>
+          </ul>
         </div>
 
         <div>

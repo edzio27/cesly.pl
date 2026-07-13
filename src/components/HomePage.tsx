@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check, Bookmark } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Users, Check, Bookmark, Plus } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { FeaturedCarousel } from './FeaturedCarousel';
 import { Logo } from './Logo';
+import { AuthModal } from './AuthModal';
 import { calculateDealScore } from '../utils/dealScore';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
 
 type HomePageProps = {
   onViewListing: (id: string) => void;
+  onNavigate: (page: string) => void;
   initialFilters?: Partial<Filters>;
 };
 
@@ -37,6 +39,13 @@ const PRICE_RANGE_PRESETS: { label: string; min: string; max: string }[] = [
   { label: '1000-2000 zł', min: '1000', max: '2000' },
   { label: '2000-3000 zł', min: '2000', max: '3000' },
   { label: '3000 zł i więcej', min: '3000', max: '' },
+];
+
+const HOW_IT_WORKS_STEPS: { title: string; description: string }[] = [
+  { title: 'Znajdź ofertę', description: 'Przeglądaj aktywne ogłoszenia — a jeśli chcesz oddać leasing, dodaj swoje ogłoszenie za darmo' },
+  { title: 'Skontaktuj się', description: 'Napisz do właściciela przez wiadomości w serwisie' },
+  { title: 'Uzgodnij warunki', description: 'Z obecnym leasingobiorcą i leasingodawcą' },
+  { title: 'Podpisz cesję', description: 'Leasingodawca zatwierdza, umowa przechodzi na Ciebie' },
 ];
 
 const FAQ_ITEMS = [
@@ -140,8 +149,9 @@ function FaqSection() {
   );
 }
 
-export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
+export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePageProps) {
   const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -396,49 +406,24 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         </div>
       </section>
 
+      <section className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 text-center">Jak to działa</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOW_IT_WORKS_STEPS.map((step, index) => (
+              <div key={step.title} className="text-center">
+                <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-500 text-white font-bold rounded-full mb-3">
+                  {index + 1}
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1.5">{step.title}</h3>
+                <p className="text-xs text-gray-600">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
-        {/* Compact strip on mobile so search + listings aren't pushed below the fold */}
-        <div className="md:hidden flex items-center justify-around bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 mb-6 text-center">
-          <div className="flex flex-col items-center gap-1 px-1">
-            <TrendingUp className="w-5 h-5 text-amber-600" />
-            <span className="text-[10px] font-medium text-gray-700">Największa oferta</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 px-1">
-            <Shield className="w-5 h-5 text-amber-600" />
-            <span className="text-[10px] font-medium text-gray-700">Bezpieczny kontakt</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 px-1">
-            <Users className="w-5 h-5 text-amber-600" />
-            <span className="text-[10px] font-medium text-gray-700">Aktywna społeczność</span>
-          </div>
-        </div>
-
-        <div className="hidden md:grid md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
-              <TrendingUp className="w-5 h-5 text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-1.5">Największa oferta</h3>
-            <p className="text-xs text-gray-600">Tysiące aktywnych ogłoszeń cesji leasingu w jednym miejscu</p>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
-              <Shield className="w-5 h-5 text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-1.5">Bezpieczne transakcje</h3>
-            <p className="text-xs text-gray-600">Bezpośredni kontakt z właścicielem, wiadomości w serwisie i możliwość zgłoszenia nieprawidłowego ogłoszenia</p>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
-              <Users className="w-5 h-5 text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-1.5">Sprawdzona społeczność</h3>
-            <p className="text-xs text-gray-600">Dołącz do setek zadowolonych użytkowników platformy</p>
-          </div>
-        </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg mb-8 border border-gray-200/50">
         <div className="px-6 py-5">
@@ -547,7 +532,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
 
           {showAdvancedFilters && (
             <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Rata miesięczna (min)
@@ -585,23 +570,6 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
                 placeholder="Bez limitu"
                 className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Sortowanie
-              </label>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
-              >
-                <option value="newest">Najnowsze</option>
-                <option value="oldest">Najstarsze</option>
-                <option value="price_asc">Rata: rosnąco</option>
-                <option value="price_desc">Rata: malejąco</option>
-                <option value="installments_asc">Najmniej rat</option>
-              </select>
             </div>
           </div>
 
@@ -680,11 +648,24 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
             <FeaturedCarousel listings={featuredListings} onViewListing={onViewListing} />
           )}
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <h2 className="text-2xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
-            <span className="text-sm text-gray-600">
-              {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
+              </span>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
+              >
+                <option value="newest">Najnowsze</option>
+                <option value="oldest">Najstarsze</option>
+                <option value="price_asc">Rata: rosnąco</option>
+                <option value="price_desc">Rata: malejąco</option>
+                <option value="installments_asc">Najmniej rat</option>
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {listings.map((listing, index) => (
@@ -742,7 +723,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         </>
       )}
 
-      <div className="mt-16 space-y-12">
+      <div className="mt-12 space-y-8">
         <section className="bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 md:p-8">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">Czym jest cesja leasingu?</h2>
           <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
@@ -780,6 +761,24 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
           <FaqSection />
         </section>
       </div>
+
+      <section className="bg-brand-navy">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Chcesz oddać leasing?</h2>
+          <p className="text-gray-300 mb-6 max-w-xl mx-auto">
+            Dodaj ogłoszenie za darmo w kilka minut i znajdź kogoś, kto przejmie Twoje raty.
+          </p>
+          <button
+            onClick={() => (user ? onNavigate('add-listing') : setShowAuthModal(true))}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all"
+          >
+            <Plus size={20} />
+            Dodaj ogłoszenie za darmo
+          </button>
+        </div>
+      </section>
+
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       </div>
     </div>
   );

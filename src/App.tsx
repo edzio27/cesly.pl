@@ -169,7 +169,7 @@ function App() {
     <div className="min-h-screen bg-slate-950">
       <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
 
-      {currentPage === 'home' && <HomePage onViewListing={handleViewListing} initialFilters={pendingHomeFilters} />}
+      {currentPage === 'home' && <HomePage onViewListing={handleViewListing} initialFilters={pendingHomeFilters} onNavigate={handleNavigate} />}
 
       {currentPage === 'listing-detail' && selectedListingId && (
         <ListingDetailPage
@@ -208,7 +208,7 @@ function App() {
         {currentPage === 'polityka-prywatnosci' && <PolitykaPrywatnosciPage />}
       </Suspense>
 
-      <Footer onNavigate={handleNavigate} />
+      <Footer onNavigate={handleNavigate} onApplyFilters={handleApplySavedSearch} />
       <CookieConsentBanner />
     </div>
   );

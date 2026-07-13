@@ -497,7 +497,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
           Powrót do listy
         </button>
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
         {listing.is_promoted && (
           <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 text-sm font-semibold flex items-center">
             <Star size={18} className="mr-2" fill="currentColor" />
@@ -525,7 +525,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                         e.stopPropagation();
                         prevImage();
                       }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/75 hover:bg-white rounded-full p-2 transition"
                     >
                       <ChevronLeft size={24} />
                     </button>
@@ -534,12 +534,12 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                         e.stopPropagation();
                         nextImage();
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-75 hover:bg-opacity-100 rounded-full p-2 transition"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/75 hover:bg-white rounded-full p-2 transition"
                     >
                       <ChevronRight size={24} />
                     </button>
 
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
                       {currentImageIndex + 1} / {images.length}
                     </div>
                   </>
@@ -547,15 +547,15 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
               </div>
 
               {images.length > 1 && (
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-6 gap-3">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`aspect-square rounded overflow-hidden border-2 transition ${
+                      className={`aspect-square rounded-lg overflow-hidden transition ${
                         currentImageIndex === idx
-                          ? 'border-blue-600'
-                          : 'border-gray-200 hover:border-gray-400'
+                          ? 'ring-2 ring-amber-500 ring-offset-2'
+                          : 'border-2 border-gray-200 hover:border-gray-400'
                       }`}
                     >
                       <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -688,61 +688,64 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                 );
               })()}
 
-              {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Kontakt</h2>
-                  <div className="space-y-2">
-                    {sellerProfile.name && (
-                      <div className="flex items-center text-gray-700">
-                        <span className="font-medium mr-2">Kontakt:</span>
-                        <span className="text-gray-900">{sellerProfile.name}</span>
-                      </div>
-                    )}
-                    {sellerProfile.email && (
-                      <div className="flex items-center text-gray-700">
-                        <span className="font-medium mr-2">Email:</span>
-                        <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
-                          {sellerProfile.email}
-                        </a>
-                      </div>
-                    )}
-                    {sellerProfile.phone && (
-                      <div className="flex items-center text-gray-700">
-                        <span className="font-medium mr-2">Telefon:</span>
-                        <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
-                          {sellerProfile.phone}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {((sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) || (user && listing.user_id !== user.id)) && (
+                <div className="bg-amber-50 rounded-2xl p-4 mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Skontaktuj się ze sprzedającym</h2>
 
-              {user && listing.user_id !== user.id && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">Napisz wiadomość</h2>
-                  {messageSent ? (
-                    <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                      Wiadomość wysłana. Odpowiedź znajdziesz w swoim profilu, w zakładce "Wiadomości".
-                    </p>
-                  ) : (
-                    <>
-                      <textarea
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Napisz wiadomość do właściciela ogłoszenia..."
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                      {messageError && <p className="text-xs text-red-600 mt-1">{messageError}</p>}
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={sendingMessage || !messageText.trim()}
-                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {sendingMessage ? 'Wysyłanie...' : 'Wyślij wiadomość'}
-                      </button>
-                    </>
+                  {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
+                    <div className="space-y-2 mb-4">
+                      {sellerProfile.name && (
+                        <div className="flex items-center text-gray-700">
+                          <span className="font-medium mr-2">Kontakt:</span>
+                          <span className="text-gray-900">{sellerProfile.name}</span>
+                        </div>
+                      )}
+                      {sellerProfile.email && (
+                        <div className="flex items-center text-gray-700">
+                          <span className="font-medium mr-2">Email:</span>
+                          <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
+                            {sellerProfile.email}
+                          </a>
+                        </div>
+                      )}
+                      {sellerProfile.phone && (
+                        <div className="flex items-center text-gray-700">
+                          <span className="font-medium mr-2">Telefon:</span>
+                          <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
+                            {sellerProfile.phone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {user && listing.user_id !== user.id && (
+                    <div className={(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) ? 'pt-4 border-t border-amber-200' : ''}>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Napisz wiadomość</h3>
+                      {messageSent ? (
+                        <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                          Wiadomość wysłana. Odpowiedź znajdziesz w swoim profilu, w zakładce "Wiadomości".
+                        </p>
+                      ) : (
+                        <>
+                          <textarea
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            placeholder="Napisz wiadomość do właściciela ogłoszenia..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                          />
+                          {messageError && <p className="text-xs text-red-600 mt-1">{messageError}</p>}
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={sendingMessage || !messageText.trim()}
+                            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {sendingMessage ? 'Wysyłanie...' : 'Wyślij wiadomość'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -761,7 +764,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
               </div>
 
               {reportOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
                   <div className="bg-white rounded-lg p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Zgłoś ogłoszenie</h3>
                     {reportSent ? (
@@ -910,7 +913,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
       {lightboxOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
           onClick={closeLightbox}
         >
           <button
@@ -949,7 +952,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
             />
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black bg-opacity-75 text-white px-4 py-2 rounded-full">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/75 text-white px-4 py-2 rounded-full">
             {lightboxIndex + 1} / {images.length}
           </div>
         </div>

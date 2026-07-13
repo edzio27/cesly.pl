@@ -376,12 +376,14 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-amber-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <section
-        className="relative overflow-hidden bg-cover bg-center min-h-[420px] md:min-h-[560px] flex items-end justify-center"
-        style={{ backgroundImage: "url('/hero-bg.png')" }}
-      >
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex justify-center">
-          <div className="flex items-center gap-8 text-sm bg-black/30 backdrop-blur-sm rounded-full px-6 py-2.5">
+      <section className="relative overflow-hidden bg-gradient-to-tr from-brand-navy to-brand-navy-light">
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 flex flex-col items-center">
+          <img
+            src="/hero-bg.png"
+            alt="Cesly.pl – Cesje i najmy. Przejmij leasing, zyskaj więcej."
+            className="w-full max-w-md md:max-w-xl h-auto"
+          />
+          <div className="flex items-center gap-8 text-sm bg-black/30 backdrop-blur-sm rounded-full px-6 py-2.5 mt-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-amber-400" />
               <span className="font-semibold text-white"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>

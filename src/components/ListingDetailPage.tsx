@@ -688,61 +688,64 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                 );
               })()}
 
-              {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Kontakt</h2>
-                  <div className="space-y-2">
-                    {sellerProfile.name && (
-                      <div className="flex items-center text-gray-700">
-                        <span className="font-medium mr-2">Kontakt:</span>
-                        <span className="text-gray-900">{sellerProfile.name}</span>
-                      </div>
-                    )}
-                    {sellerProfile.email && (
-                      <div className="flex items-center text-gray-700">
-                        <span className="font-medium mr-2">Email:</span>
-                        <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
-                          {sellerProfile.email}
-                        </a>
-                      </div>
-                    )}
-                    {sellerProfile.phone && (
-                      <div className="flex items-center text-gray-700">
-                        <span className="font-medium mr-2">Telefon:</span>
-                        <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
-                          {sellerProfile.phone}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {((sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) || (user && listing.user_id !== user.id)) && (
+                <div className="bg-amber-50 rounded-2xl p-4 mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Skontaktuj się ze sprzedającym</h2>
 
-              {user && listing.user_id !== user.id && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">Napisz wiadomość</h2>
-                  {messageSent ? (
-                    <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                      Wiadomość wysłana. Odpowiedź znajdziesz w swoim profilu, w zakładce "Wiadomości".
-                    </p>
-                  ) : (
-                    <>
-                      <textarea
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Napisz wiadomość do właściciela ogłoszenia..."
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                      {messageError && <p className="text-xs text-red-600 mt-1">{messageError}</p>}
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={sendingMessage || !messageText.trim()}
-                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {sendingMessage ? 'Wysyłanie...' : 'Wyślij wiadomość'}
-                      </button>
-                    </>
+                  {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
+                    <div className="space-y-2 mb-4">
+                      {sellerProfile.name && (
+                        <div className="flex items-center text-gray-700">
+                          <span className="font-medium mr-2">Kontakt:</span>
+                          <span className="text-gray-900">{sellerProfile.name}</span>
+                        </div>
+                      )}
+                      {sellerProfile.email && (
+                        <div className="flex items-center text-gray-700">
+                          <span className="font-medium mr-2">Email:</span>
+                          <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
+                            {sellerProfile.email}
+                          </a>
+                        </div>
+                      )}
+                      {sellerProfile.phone && (
+                        <div className="flex items-center text-gray-700">
+                          <span className="font-medium mr-2">Telefon:</span>
+                          <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
+                            {sellerProfile.phone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {user && listing.user_id !== user.id && (
+                    <div className={(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) ? 'pt-4 border-t border-amber-200' : ''}>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Napisz wiadomość</h3>
+                      {messageSent ? (
+                        <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                          Wiadomość wysłana. Odpowiedź znajdziesz w swoim profilu, w zakładce "Wiadomości".
+                        </p>
+                      ) : (
+                        <>
+                          <textarea
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            placeholder="Napisz wiadomość do właściciela ogłoszenia..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                          />
+                          {messageError && <p className="text-xs text-red-600 mt-1">{messageError}</p>}
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={sendingMessage || !messageText.trim()}
+                            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {sendingMessage ? 'Wysyłanie...' : 'Wyślij wiadomość'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

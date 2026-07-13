@@ -606,7 +606,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
             </h3>
             <p className="text-sm text-gray-600 mb-3">
               Wklej link do ogłoszenia (Otomoto, OLX, Gratka, Facebook) lub treść ogłoszenia,
-              a potem kliknij "Wyciągnij dane" — spróbujemy wypełnić tytuł, markę, model, rok,
+              a potem kliknij "Importuj ogłoszenie" — spróbujemy wypełnić tytuł, markę, model, rok,
               przebieg, opis i do 3 zdjęć, a jeśli treść zawiera też warunki cesji (rata,
               odstępne, wykup, raty) — również je.
             </p>
@@ -625,7 +625,7 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
               disabled={!smartInput.trim() || analyzing}
               className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {analyzing ? 'Analizuję...' : 'Wyciągnij dane'}
+              {analyzing ? 'Analizuję...' : 'Importuj ogłoszenie'}
             </button>
 
             {needsManualPaste && !analyzing && (

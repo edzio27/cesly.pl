@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check, Bookmark, Plus } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Users, Check, Bookmark, Plus } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { FeaturedCarousel } from './FeaturedCarousel';
@@ -42,7 +42,7 @@ const PRICE_RANGE_PRESETS: { label: string; min: string; max: string }[] = [
 ];
 
 const HOW_IT_WORKS_STEPS: { title: string; description: string }[] = [
-  { title: 'Znajdź ofertę', description: 'Przeglądaj aktywne ogłoszenia cesji leasingu dopasowane do Twojego budżetu' },
+  { title: 'Znajdź ofertę', description: 'Przeglądaj aktywne ogłoszenia — a jeśli chcesz oddać leasing, dodaj swoje ogłoszenie za darmo' },
   { title: 'Skontaktuj się', description: 'Napisz do właściciela przez wiadomości w serwisie' },
   { title: 'Uzgodnij warunki', description: 'Z obecnym leasingobiorcą i leasingodawcą' },
   { title: 'Podpisz cesję', description: 'Leasingodawca zatwierdza, umowa przechodzi na Ciebie' },
@@ -424,48 +424,6 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
       </section>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
-        {/* Compact strip on mobile so search + listings aren't pushed below the fold */}
-        <div className="md:hidden flex items-center justify-around bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 mb-6 text-center">
-          <div className="flex flex-col items-center gap-1 px-1">
-            <TrendingUp className="w-5 h-5 text-amber-600" />
-            <span className="text-[10px] font-medium text-gray-700">Największa oferta</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 px-1">
-            <Shield className="w-5 h-5 text-amber-600" />
-            <span className="text-[10px] font-medium text-gray-700">Bezpieczny kontakt</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 px-1">
-            <Users className="w-5 h-5 text-amber-600" />
-            <span className="text-[10px] font-medium text-gray-700">Aktywna społeczność</span>
-          </div>
-        </div>
-
-        <div className="hidden md:grid md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
-              <TrendingUp className="w-5 h-5 text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-1.5">Największa oferta</h3>
-            <p className="text-xs text-gray-600">Tysiące aktywnych ogłoszeń cesji leasingu w jednym miejscu</p>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
-              <Shield className="w-5 h-5 text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-1.5">Bezpieczne transakcje</h3>
-            <p className="text-xs text-gray-600">Bezpośredni kontakt z właścicielem, wiadomości w serwisie i możliwość zgłoszenia nieprawidłowego ogłoszenia</p>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full mb-2">
-              <Users className="w-5 h-5 text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-1.5">Sprawdzona społeczność</h3>
-            <p className="text-xs text-gray-600">Dołącz do setek zadowolonych użytkowników platformy</p>
-          </div>
-        </div>
 
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg mb-8 border border-gray-200/50">
         <div className="px-6 py-5">

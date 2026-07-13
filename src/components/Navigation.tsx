@@ -33,18 +33,15 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
 
   return (
     <>
-      <nav className="bg-gradient-to-b from-gray-50/95 to-white/95 backdrop-blur-md shadow-md sticky top-0 z-40 border-b border-gray-200">
+      <nav className="bg-brand-navy/95 backdrop-blur-md shadow-md sticky top-0 z-40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <button
               onClick={() => handleNavigate('home')}
               className="flex items-center space-x-3 group"
             >
-              <img
-                src="/transparent.png"
-                alt="Cesly.pl"
-                className="h-10 transition-transform group-hover:scale-105 duration-300"
-              />
+              <Logo size={40} className="transition-transform group-hover:scale-105 duration-300" />
+              <span className="text-lg font-bold text-white">Cesly.pl</span>
             </button>
 
             <div className="hidden md:flex items-center space-x-3">
@@ -59,7 +56,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               <div className="relative">
                 <button
                   onClick={() => user ? setShowDesktopMenu(!showDesktopMenu) : setShowAuthModal(true)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-200 hover:bg-white/10 transition"
                 >
                   <User size={20} />
                   <span className="font-medium">Moje konto</span>
@@ -116,7 +113,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
 
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+              className="md:hidden p-2 rounded-lg text-gray-200 hover:bg-white/10 transition"
             >
               {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -124,17 +121,20 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
         </div>
 
         {showMobileMenu && (
-          <div className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-md">
+          <div className="md:hidden border-t border-white/10 bg-brand-navy/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-2">
+              <button
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  user ? handleNavigate('add-listing') : setShowAuthModal(true);
+                }}
+                className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+              >
+                <Plus size={20} />
+                <span>Dodaj ogłoszenie za darmo</span>
+              </button>
               {user ? (
                 <>
-                  <button
-                    onClick={() => handleNavigate('add-listing')}
-                    className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
-                  >
-                    <Plus size={20} />
-                    <span>Dodaj ogłoszenie za darmo</span>
-                  </button>
                   <button
                     onClick={() => handleNavigate('bulk-import')}
                     className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
@@ -193,7 +193,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                     setShowAuthModal(true);
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+                  className="w-full flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-4 py-3 rounded-lg transition font-medium"
                 >
                   <User size={20} />
                   <span>Zaloguj się</span>

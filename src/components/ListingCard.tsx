@@ -41,12 +41,15 @@ function StarRating({ score }: { score: number }) {
   );
 }
 
+const FALLBACK_IMAGE = 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
+
 export function ListingCard({ listing, onView, priority = false, index = 0 }: ListingCardProps) {
-  const mainImage = listing.images && listing.images.length > 0
+  const initialImage = listing.images && listing.images.length > 0
     ? listing.images[0]
-    : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
+    : FALLBACK_IMAGE;
 
   const deal = calculateDealScore(listing);
+  const [imageSrc, setImageSrc] = useState(initialImage);
   const [imageLoaded, setImageLoaded] = useState(priority);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -61,7 +64,7 @@ export function ListingCard({ listing, onView, priority = false, index = 0 }: Li
       href={`/listing/${listing.id}`}
       onClick={handleClick}
       style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
-      className="group block bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden hover:shadow-2xl hover:shadow-amber-500/25 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:-translate-y-1.5 hover:scale-[1.02] duration-300 motion-safe:animate-fade-in-up"
+      className="group block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl hover:shadow-amber-500/25 transition-[transform,box-shadow,border-color] cursor-pointer border border-gray-200 hover:border-amber-400 hover:-translate-y-1.5 hover:scale-[1.02] duration-300 motion-safe:animate-fade-in-up"
     >
       {listing.is_promoted && (
         <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-2 py-1 text-xs font-bold flex items-center">
@@ -72,13 +75,20 @@ export function ListingCard({ listing, onView, priority = false, index = 0 }: Li
 
       <div className="aspect-square w-full overflow-hidden bg-gray-100 relative">
         <img
-          src={mainImage}
+          src={imageSrc}
           alt={listing.title}
           loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
           // @ts-expect-error React 18 types don't include fetchpriority yet; lowercase name is required for React to pass it through as-is
           fetchpriority={priority ? 'high' : 'auto'}
           onLoad={() => setImageLoaded(true)}
-          onError={() => setImageLoaded(true)}
+          onError={() => {
+            if (imageSrc !== FALLBACK_IMAGE) {
+              setImageSrc(FALLBACK_IMAGE);
+            } else {
+              setImageLoaded(true);
+            }
+          }}
           className={`w-full h-full object-cover object-center group-hover:scale-110 transition-[opacity,transform] duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>

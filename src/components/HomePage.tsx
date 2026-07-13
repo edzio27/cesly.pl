@@ -3,6 +3,7 @@ import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trendi
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { FeaturedCarousel } from './FeaturedCarousel';
+import { Logo } from './Logo';
 import { calculateDealScore } from '../utils/dealScore';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
@@ -375,31 +376,27 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
         <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-amber-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 text-center">
-          <div className="inline-block mb-4">
-            <img
-              src="/cesly_logo_fixed.png"
-              alt="Cesly.pl"
-              className="h-16 md:h-20 mx-auto"
-            />
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Największa baza cesji leasingów w Polsce
-            </h1>
-            <div className="flex items-center justify-center gap-8 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-600" />
-                <span className="font-semibold"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
-              </div>
+      <section className="relative overflow-hidden bg-gradient-to-tr from-brand-navy to-brand-navy-light">
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex flex-col items-center">
+          <img
+            src="/hero-bg.png"
+            alt="Cesly.pl – Cesje i najmy. Przejmij leasing, zyskaj więcej."
+            className="w-full h-auto"
+          />
+          <div className="flex items-center gap-8 text-sm bg-black/30 backdrop-blur-sm rounded-full px-6 py-2.5 mt-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-amber-400" />
+              <span className="font-semibold text-white"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-amber-400" />
+              <span className="font-semibold text-white"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
             </div>
           </div>
         </div>
+      </section>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Compact strip on mobile so search + listings aren't pushed below the fold */}
         <div className="md:hidden flex items-center justify-around bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 mb-6 text-center">

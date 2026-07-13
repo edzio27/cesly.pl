@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check, Bookmark } from 'lucide-react';
+import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Shield, Users, Check, Bookmark, Plus } from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { ListingCard } from './ListingCard';
 import { FeaturedCarousel } from './FeaturedCarousel';
 import { Logo } from './Logo';
+import { AuthModal } from './AuthModal';
 import { calculateDealScore } from '../utils/dealScore';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
 
 type HomePageProps = {
   onViewListing: (id: string) => void;
+  onNavigate: (page: string) => void;
   initialFilters?: Partial<Filters>;
 };
 
@@ -147,8 +149,9 @@ function FaqSection() {
   );
 }
 
-export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
+export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePageProps) {
   const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -800,6 +803,24 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
           <FaqSection />
         </section>
       </div>
+
+      <section className="bg-brand-navy">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Chcesz oddać leasing?</h2>
+          <p className="text-gray-300 mb-6 max-w-xl mx-auto">
+            Dodaj ogłoszenie za darmo w kilka minut i znajdź kogoś, kto przejmie Twoje raty.
+          </p>
+          <button
+            onClick={() => (user ? onNavigate('add-listing') : setShowAuthModal(true))}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all"
+          >
+            <Plus size={20} />
+            Dodaj ogłoszenie za darmo
+          </button>
+        </div>
+      </section>
+
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       </div>
     </div>
   );

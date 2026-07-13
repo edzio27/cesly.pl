@@ -57,6 +57,24 @@ export default {
           900: '#38160a',
           950: '#240e06',
         },
+        // Secondary pages (auth modal, listing detail, messages, admin,
+        // etc.) still used the pre-rebrand blue-* classes for buttons,
+        // links and emphasized values. Redefined to the same brand
+        // orange as `amber` so every blue-* usage site-wide matches the
+        // new accent instead of clashing with it.
+        blue: {
+          50: '#fdf1ea',
+          100: '#fbe1d2',
+          200: '#f6c3a5',
+          300: '#f0a374',
+          400: '#e68249',
+          500: '#d55d3f',
+          600: '#b94e23',
+          700: '#953d1b',
+          800: '#742f15',
+          900: '#56220f',
+          950: '#38160a',
+        },
         // Redefined to Tailwind's `green` scale so emerald-600 (used
         // for the deal-score "positive" badge) lands exactly on the
         // brand's Success color (#16A34A). Plain green-* classes

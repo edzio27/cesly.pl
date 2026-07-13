@@ -123,15 +123,18 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
         {showMobileMenu && (
           <div className="md:hidden border-t border-white/10 bg-brand-navy/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-2">
+              <button
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  user ? handleNavigate('add-listing') : setShowAuthModal(true);
+                }}
+                className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+              >
+                <Plus size={20} />
+                <span>Dodaj ogłoszenie za darmo</span>
+              </button>
               {user ? (
                 <>
-                  <button
-                    onClick={() => handleNavigate('add-listing')}
-                    className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
-                  >
-                    <Plus size={20} />
-                    <span>Dodaj ogłoszenie za darmo</span>
-                  </button>
                   <button
                     onClick={() => handleNavigate('bulk-import')}
                     className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
@@ -190,7 +193,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                     setShowAuthModal(true);
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+                  className="w-full flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-4 py-3 rounded-lg transition font-medium"
                 >
                   <User size={20} />
                   <span>Zaloguj się</span>

@@ -377,7 +377,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
       </div>
 
       <section className="relative overflow-hidden bg-gradient-to-tr from-brand-navy to-brand-navy-light">
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 flex flex-col items-center">
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex flex-col items-center">
           <img
             src="/hero-bg.png"
             alt="Cesly.pl – Cesje i najmy. Przejmij leasing, zyskaj więcej."

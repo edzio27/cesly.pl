@@ -547,7 +547,7 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
 
           {showAdvancedFilters && (
             <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
                 Rata miesięczna (min)
@@ -585,23 +585,6 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
                 placeholder="Bez limitu"
                 className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Sortowanie
-              </label>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
-              >
-                <option value="newest">Najnowsze</option>
-                <option value="oldest">Najstarsze</option>
-                <option value="price_asc">Rata: rosnąco</option>
-                <option value="price_desc">Rata: malejąco</option>
-                <option value="installments_asc">Najmniej rat</option>
-              </select>
             </div>
           </div>
 
@@ -680,11 +663,24 @@ export function HomePage({ onViewListing, initialFilters }: HomePageProps) {
             <FeaturedCarousel listings={featuredListings} onViewListing={onViewListing} />
           )}
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <h2 className="text-2xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
-            <span className="text-sm text-gray-600">
-              {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
+              </span>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
+              >
+                <option value="newest">Najnowsze</option>
+                <option value="oldest">Najstarsze</option>
+                <option value="price_asc">Rata: rosnąco</option>
+                <option value="price_desc">Rata: malejąco</option>
+                <option value="installments_asc">Najmniej rat</option>
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {listings.map((listing, index) => (

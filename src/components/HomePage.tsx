@@ -29,7 +29,9 @@ export type Filters = {
   sortBy: string;
 };
 
-const ITEMS_PER_PAGE = 21;
+// Multiple of 12 (LCM of the grid's 2/3/4 responsive column counts) so the
+// last row is always fully filled before a next page is ever needed.
+const ITEMS_PER_PAGE = 24;
 
 const POPULAR_BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Škoda', 'Toyota', 'Kia', 'Volvo'];
 

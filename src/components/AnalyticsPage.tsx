@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { TrendingUp, Eye, MousePointerClick, BarChart3, Calendar } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Eye, MousePointerClick, BarChart3, Calendar } from 'lucide-react';
 import { getUserListingsAnalytics, getListingAnalytics, ListingAnalytics } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
 

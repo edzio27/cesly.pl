@@ -1,5 +1,18 @@
-import React, { useState } from 'react';
-import { Car, User, Plus, Heart, LogOut, Settings, Menu, X, Upload, BarChart3 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  User,
+  Plus,
+  LogOut,
+  Settings,
+  Menu,
+  X,
+  Upload,
+  BarChart3,
+  Heart,
+  MessageSquare,
+  ChevronDown,
+  Search,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
 import { Logo } from './Logo';
@@ -9,11 +22,41 @@ type NavigationProps = {
   onNavigate: (page: string) => void;
 };
 
+// The scraping/import/analytics screens are owner tooling, not features for
+// every signed-in visitor. Listing the allowed e-mails in VITE_ADMIN_EMAILS
+// hides them from everyone else; with the variable unset the links stay
+// visible so an existing deployment never locks the owner out.
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS as string | undefined)
+  ?.split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const { user, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showDesktopMenu, setShowDesktopMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const isAdmin =
+    !ADMIN_EMAILS || ADMIN_EMAILS.length === 0
+      ? !!user
+      : !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // A full-screen sheet behind a scrollable page is a classic mobile trap.
+  useEffect(() => {
+    document.body.style.overflow = showMobileMenu ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileMenu]);
 
   const handleSignOut = async () => {
     try {
@@ -29,180 +72,255 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const handleNavigate = (page: string) => {
     onNavigate(page);
     setShowMobileMenu(false);
+    setShowDesktopMenu(false);
   };
+
+  const requireAuth = (page: string) => {
+    if (user) handleNavigate(page);
+    else {
+      setShowMobileMenu(false);
+      setShowAuthModal(true);
+    }
+  };
+
+  const menuItem =
+    'w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900';
 
   return (
     <>
-      <nav className="bg-brand-navy/95 backdrop-blur-md shadow-md sticky top-0 z-40 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      <nav
+        className={`sticky top-0 z-50 border-b transition-all duration-300 ${
+          scrolled
+            ? 'glass-dark border-white/10 shadow-lift'
+            : 'border-transparent bg-ink-950'
+        }`}
+      >
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+          <button
+            onClick={() => handleNavigate('home')}
+            className="group flex shrink-0 items-center gap-2.5"
+            aria-label="Cesly.pl - strona główna"
+          >
+            <Logo size={34} className="transition-transform duration-300 group-hover:scale-105" />
+            <span className="font-display text-lg font-extrabold tracking-tight text-white">
+              Cesly<span className="text-accent-400">.pl</span>
+            </span>
+          </button>
+
+          <div className="hidden items-center gap-1 md:flex">
             <button
               onClick={() => handleNavigate('home')}
-              className="flex items-center space-x-3 group"
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                currentPage === 'home'
+                  ? 'bg-white/10 text-white'
+                  : 'text-ink-200 hover:bg-white/5 hover:text-white'
+              }`}
             >
-              <Logo size={40} className="transition-transform group-hover:scale-105 duration-300" />
-              <span className="text-lg font-bold text-white">Cesly.pl</span>
+              Wszystkie cesje
             </button>
+            <a
+              href="/#jak-to-dziala"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-ink-200 transition-colors hover:bg-white/5 hover:text-white"
+            >
+              Jak to działa
+            </a>
+            <a
+              href="/#faq"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-ink-200 transition-colors hover:bg-white/5 hover:text-white"
+            >
+              Pytania
+            </a>
+          </div>
 
-            <div className="hidden md:flex items-center space-x-3">
-              <button
-                onClick={() => user ? handleNavigate('add-listing') : setShowAuthModal(true)}
-                className="flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all font-medium"
+          <div className="ml-auto hidden items-center gap-2 md:flex">
+            {/* Once the hero search has scrolled away, the nav keeps a way back to it. */}
+            {scrolled && currentPage === 'home' && (
+              <a
+                href="/#szukaj"
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-ink-200 transition-colors hover:border-white/20 hover:text-white motion-safe:animate-scale-in"
               >
-                <Plus size={20} />
-                <span>Dodaj ogłoszenie za darmo</span>
-              </button>
-
-              <div className="relative">
-                <button
-                  onClick={() => user ? setShowDesktopMenu(!showDesktopMenu) : setShowAuthModal(true)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-200 hover:bg-white/10 transition"
-                >
-                  <User size={20} />
-                  <span className="font-medium">Moje konto</span>
-                </button>
-
-                {user && showDesktopMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowDesktopMenu(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                      <button
-                        onClick={() => { handleNavigate('profile'); setShowDesktopMenu(false); }}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                      >
-                        <User size={18} />
-                        <span>Mój profil</span>
-                      </button>
-                      <button
-                        onClick={() => { handleNavigate('bulk-import'); setShowDesktopMenu(false); }}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                      >
-                        <Upload size={18} />
-                        <span>Masowy import</span>
-                      </button>
-                      <button
-                        onClick={() => { handleNavigate('admin-scraping'); setShowDesktopMenu(false); }}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                      >
-                        <Settings size={18} />
-                        <span>Admin</span>
-                      </button>
-                      <button
-                        onClick={() => { handleNavigate('analytics'); setShowDesktopMenu(false); }}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition"
-                      >
-                        <BarChart3 size={18} />
-                        <span>Statystyki</span>
-                      </button>
-                      <div className="border-t border-gray-200 my-1" />
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition"
-                      >
-                        <LogOut size={18} />
-                        <span>Wyloguj</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+                <Search size={16} />
+                <span>Szukaj cesji</span>
+              </a>
+            )}
 
             <button
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden p-2 rounded-lg text-gray-200 hover:bg-white/10 transition"
+              onClick={() => requireAuth('add-listing')}
+              className="flex items-center gap-2 rounded-xl bg-accent-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-600 hover:shadow-glow active:scale-[0.98]"
             >
-              {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+              <Plus size={18} />
+              <span>Dodaj ogłoszenie</span>
+              <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                gratis
+              </span>
             </button>
-          </div>
-        </div>
 
-        {showMobileMenu && (
-          <div className="md:hidden border-t border-white/10 bg-brand-navy/95 backdrop-blur-md">
-            <div className="px-4 py-3 space-y-2">
+            <div className="relative">
               <button
-                onClick={() => {
-                  setShowMobileMenu(false);
-                  user ? handleNavigate('add-listing') : setShowAuthModal(true);
-                }}
-                className="w-full flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-lg hover:shadow-lg transition font-medium"
+                onClick={() => (user ? setShowDesktopMenu(!showDesktopMenu) : setShowAuthModal(true))}
+                className="flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-medium text-ink-100 transition-colors hover:bg-white/5 hover:text-white"
               >
-                <Plus size={20} />
-                <span>Dodaj ogłoszenie za darmo</span>
+                <User size={18} />
+                <span>{user ? 'Moje konto' : 'Zaloguj się'}</span>
+                {user && <ChevronDown size={14} className={showDesktopMenu ? 'rotate-180 transition-transform' : 'transition-transform'} />}
               </button>
-              {user ? (
+
+              {user && showDesktopMenu && (
                 <>
-                  <button
-                    onClick={() => handleNavigate('bulk-import')}
-                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                      currentPage === 'bulk-import'
-                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Upload size={20} />
-                    <span>Masowy Import</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('admin-scraping')}
-                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                      currentPage === 'admin-scraping'
-                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Settings size={20} />
-                    <span>Admin</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('analytics')}
-                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                      currentPage === 'analytics'
-                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <BarChart3 size={20} />
-                    <span>Statystyki</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('profile')}
-                    className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg transition ${
-                      currentPage === 'profile'
-                        ? 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <User size={20} />
-                    <span>Profil</span>
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center space-x-2 text-gray-700 hover:bg-red-500/20 hover:text-red-400 px-4 py-3 rounded-lg transition"
-                  >
-                    <LogOut size={20} />
-                    <span>Wyloguj</span>
-                  </button>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowDesktopMenu(false)} />
+                  <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-ink-100 bg-white py-2 shadow-lift motion-safe:animate-scale-in">
+                    <p className="truncate px-4 pb-2 text-xs text-ink-400">{user.email}</p>
+                    <button onClick={() => handleNavigate('profile')} className={menuItem}>
+                      <User size={17} className="text-ink-400" />
+                      Mój profil i ogłoszenia
+                    </button>
+                    <button onClick={() => handleNavigate('profile')} className={menuItem}>
+                      <Heart size={17} className="text-ink-400" />
+                      Ulubione
+                    </button>
+                    <button onClick={() => handleNavigate('profile')} className={menuItem}>
+                      <MessageSquare size={17} className="text-ink-400" />
+                      Wiadomości
+                    </button>
+
+                    {isAdmin && (
+                      <>
+                        <div className="my-1 border-t border-ink-100" />
+                        <p className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-400">
+                          Narzędzia
+                        </p>
+                        <button onClick={() => handleNavigate('bulk-import')} className={menuItem}>
+                          <Upload size={17} className="text-ink-400" />
+                          Masowy import
+                        </button>
+                        <button onClick={() => handleNavigate('admin-scraping')} className={menuItem}>
+                          <Settings size={17} className="text-ink-400" />
+                          Admin
+                        </button>
+                        <button onClick={() => handleNavigate('analytics')} className={menuItem}>
+                          <BarChart3 size={17} className="text-ink-400" />
+                          Statystyki
+                        </button>
+                      </>
+                    )}
+
+                    <div className="my-1 border-t border-ink-100" />
+                    <button
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-ink-600 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <LogOut size={17} />
+                      Wyloguj
+                    </button>
+                  </div>
                 </>
-              ) : (
-                <button
-                  onClick={() => {
-                    setShowAuthModal(true);
-                    setShowMobileMenu(false);
-                  }}
-                  className="w-full flex items-center space-x-2 text-gray-700 hover:bg-gray-100 px-4 py-3 rounded-lg transition font-medium"
-                >
-                  <User size={20} />
-                  <span>Zaloguj się</span>
-                </button>
               )}
             </div>
           </div>
-        )}
+
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="ml-auto rounded-xl p-2.5 text-ink-100 transition-colors hover:bg-white/10 md:hidden"
+            aria-label={showMobileMenu ? 'Zamknij menu' : 'Otwórz menu'}
+            aria-expanded={showMobileMenu}
+          >
+            {showMobileMenu ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </nav>
+
+      {showMobileMenu && (
+        <div className="fixed inset-0 top-16 z-40 overflow-y-auto bg-ink-950 px-4 py-6 md:hidden">
+          <button
+            onClick={() => requireAuth('add-listing')}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent-500 px-4 py-4 text-base font-semibold text-white"
+          >
+            <Plus size={20} />
+            Dodaj ogłoszenie za darmo
+          </button>
+
+          <div className="mt-6 space-y-1">
+            <button
+              onClick={() => handleNavigate('home')}
+              className="w-full rounded-xl px-4 py-3.5 text-left text-base font-medium text-white transition-colors hover:bg-white/5"
+            >
+              Wszystkie cesje
+            </button>
+            <a
+              href="/#jak-to-dziala"
+              onClick={() => setShowMobileMenu(false)}
+              className="block rounded-xl px-4 py-3.5 text-base font-medium text-ink-100 transition-colors hover:bg-white/5"
+            >
+              Jak to działa
+            </a>
+            <a
+              href="/#faq"
+              onClick={() => setShowMobileMenu(false)}
+              className="block rounded-xl px-4 py-3.5 text-base font-medium text-ink-100 transition-colors hover:bg-white/5"
+            >
+              Pytania i odpowiedzi
+            </a>
+          </div>
+
+          <div className="mt-6 border-t border-white/10 pt-6 space-y-1">
+            {user ? (
+              <>
+                <p className="truncate px-4 pb-2 text-xs text-ink-400">{user.email}</p>
+                <button
+                  onClick={() => handleNavigate('profile')}
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-base font-medium text-white transition-colors hover:bg-white/5"
+                >
+                  <User size={20} className="text-ink-300" />
+                  Mój profil
+                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => handleNavigate('bulk-import')}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-base font-medium text-ink-100 transition-colors hover:bg-white/5"
+                    >
+                      <Upload size={20} className="text-ink-300" />
+                      Masowy import
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('admin-scraping')}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-base font-medium text-ink-100 transition-colors hover:bg-white/5"
+                    >
+                      <Settings size={20} className="text-ink-300" />
+                      Admin
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('analytics')}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-base font-medium text-ink-100 transition-colors hover:bg-white/5"
+                    >
+                      <BarChart3 size={20} className="text-ink-300" />
+                      Statystyki
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={handleSignOut}
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-base font-medium text-rose-300 transition-colors hover:bg-rose-500/10"
+                >
+                  <LogOut size={20} />
+                  Wyloguj
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  setShowAuthModal(true);
+                }}
+                className="flex w-full items-center gap-3 rounded-xl border border-white/10 px-4 py-3.5 text-left text-base font-semibold text-white transition-colors hover:bg-white/5"
+              >
+                <User size={20} />
+                Zaloguj się / Zarejestruj
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>

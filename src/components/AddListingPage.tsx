@@ -37,7 +37,6 @@ export function AddListingPage({ onBack, onSuccess, editingListing }: AddListing
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [images, setImages] = useState<ImageItem[]>([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [smartInput, setSmartInput] = useState('');

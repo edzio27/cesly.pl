@@ -1,9 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Heart, Calendar, DollarSign, TrendingUp, Star, ChevronLeft, ChevronRight, CreditCard as Edit, Share2, Check, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  ArrowLeft,
+  Heart,
+  Calendar,
+  TrendingUp,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard as Edit,
+  Share2,
+  Check,
+  X,
+  Phone,
+  Mail,
+  MessageSquare,
+  Maximize2,
+  AlertTriangle,
+} from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ListingCard } from './ListingCard';
 import { trackPageView, trackListingClick } from '../utils/analytics';
-import { calculateDealScore, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
+import { calculateDealScore, DEAL_SCORE_BADGE_THRESHOLD, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
+import { formatPLN, listingAge, listingCosts } from '../utils/listingMetrics';
+
+const FALLBACK_IMAGE =
+  'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200';
 
 type ListingDetailPageProps = {
   listingId: string;
@@ -123,15 +145,11 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
   useEffect(() => {
     if (listing) {
-      const image = listing.images && listing.images.length > 0
-        ? listing.images[0]
-        : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200';
+      const image = listing.images && listing.images.length > 0 ? listing.images[0] : FALLBACK_IMAGE;
 
       const price = listing.price_type === 'monthly'
         ? `${listing.price} zł/mies`
         : `${listing.price} zł`;
-
-      const description = `${listing.brand} ${listing.model} ${listing.year} - ${price}. ${listing.description.substring(0, 150)}...`;
 
       const seoTitle = `${listing.brand} ${listing.model} ${listing.year} - Cesja leasingu | Cesly.pl`;
       const seoDescription = `Przejęcie leasingu: ${listing.brand} ${listing.model} ${listing.year}. Rata: ${price}. ${listing.description.substring(0, 120)}... Skontaktuj się z właścicielem i przejmij umowę leasingową.`;
@@ -149,7 +167,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
       updateMetaTag('name', 'twitter:description', seoDescription);
       updateMetaTag('name', 'twitter:image', image);
 
-      addStructuredData(listing, image, price);
+      addStructuredData(listing, image);
     }
 
     return () => {
@@ -168,7 +186,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
     element.setAttribute('content', content);
   };
 
-  const addStructuredData = (listing: Listing, image: string, price: string) => {
+  const addStructuredData = (listing: Listing, image: string) => {
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "Product",
@@ -355,7 +373,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
   const toggleFavorite = async () => {
     if (!user) {
-      alert('Musisz być zalogowany, aby dodać do ulubionych');
+      alert('Zaloguj się, aby zapisywać ogłoszenia w ulubionych.');
       return;
     }
 
@@ -381,11 +399,15 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Ładowanie...</p>
+      <div className="min-h-screen bg-canvas-muted">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="skeleton h-4 w-64 rounded" />
+          <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
+            <div className="space-y-4">
+              <div className="skeleton aspect-[16/10] w-full rounded-3xl" />
+              <div className="skeleton h-24 w-full rounded-2xl" />
+            </div>
+            <div className="skeleton h-96 w-full rounded-3xl" />
           </div>
         </div>
       </div>
@@ -394,32 +416,25 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
   if (!listing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <button
-            onClick={onBack}
-            className="flex items-center text-blue-600 hover:text-blue-700 mb-4"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Powrót
+      <div className="min-h-screen bg-canvas-muted">
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 lg:px-8">
+          <h1 className="font-display text-2xl font-extrabold text-ink-900">Nie znaleźliśmy tego ogłoszenia</h1>
+          <p className="mt-2 text-sm text-ink-500">
+            Mogło zostać usunięte przez autora albo cesja została już sfinalizowana.
+          </p>
+          <button onClick={onBack} className="btn-accent mt-6">
+            <ArrowLeft size={17} />
+            Wróć do listy cesji
           </button>
-          <p className="text-center text-gray-600 text-lg">Ogłoszenie nie zostało znalezione</p>
         </div>
       </div>
     );
   }
 
-  const images = listing.images && listing.images.length > 0
-    ? listing.images
-    : ['https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200'];
+  const images = listing.images && listing.images.length > 0 ? listing.images : [FALLBACK_IMAGE];
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
 
   const handleShare = async () => {
     const shareUrl = `https://cesly.pl/listing/${listingId}`;
@@ -452,71 +467,137 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
     setLightboxOpen(true);
   };
 
-  const closeLightbox = () => {
-    setLightboxOpen(false);
-  };
+  const closeLightbox = () => setLightboxOpen(false);
+  const nextLightboxImage = () => setLightboxIndex((prev) => (prev + 1) % images.length);
+  const prevLightboxImage = () => setLightboxIndex((prev) => (prev - 1 + images.length) % images.length);
 
-  const nextLightboxImage = () => {
-    if (!listing) return;
-    const images = listing.images && listing.images.length > 0
-      ? listing.images
-      : ['https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200'];
-    setLightboxIndex((prev) => (prev + 1) % images.length);
-  };
+  const costs = listingCosts(listing);
+  const age = listingAge(listing);
+  const deal = calculateDealScore(listing);
+  const hasContact = !!(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name);
+  const canMessage = !!user && listing.user_id !== user.id;
 
-  const prevLightboxImage = () => {
-    if (!listing) return;
-    const images = listing.images && listing.images.length > 0
-      ? listing.images
-      : ['https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200'];
-    setLightboxIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  const specs: { label: string; value: string }[] = [
+    { label: 'Marka', value: listing.brand },
+    { label: 'Model', value: listing.model },
+    { label: 'Rocznik', value: listing.year ? String(listing.year) : '—' },
+    { label: 'Przebieg', value: listing.mileage != null ? `${listing.mileage.toLocaleString('pl-PL')} km` : '—' },
+    { label: 'Paliwo', value: listing.fuel_type || '—' },
+    { label: 'Typ pojazdu', value: listing.vehicle_type },
+    { label: 'Pozostałe raty', value: `${listing.remaining_installments} z ${listing.total_installments}` },
+    {
+      label: 'Koniec umowy za',
+      value: costs.monthsLeft > 0 ? `${costs.monthsLeft} mies.` : '—',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav aria-label="breadcrumb" className="text-sm text-gray-500 mb-4">
+    <div className="min-h-screen bg-canvas-muted pb-24 lg:pb-0">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <nav aria-label="breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-ink-400">
           <a
             href="/"
-            onClick={(e) => { e.preventDefault(); onBack(); }}
-            className="hover:text-blue-600"
+            onClick={(e) => {
+              e.preventDefault();
+              onBack();
+            }}
+            className="transition-colors hover:text-accent-600"
           >
-            Strona główna
+            Cesje leasingu
           </a>
-          <span className="mx-2">/</span>
+          <span>/</span>
           <span className="capitalize">{listing.vehicle_type}</span>
-          <span className="mx-2">/</span>
-          <span className="text-gray-700 font-medium">{listing.brand} {listing.model}</span>
+          <span>/</span>
+          <span className="font-medium text-ink-700">
+            {listing.brand} {listing.model}
+          </span>
         </nav>
 
-        <button
-          onClick={onBack}
-          className="flex items-center text-blue-600 hover:text-blue-700 mb-6"
-        >
-          <ArrowLeft size={20} className="mr-2" />
-          Powrót do listy
-        </button>
+        <header className="mt-5 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {listing.is_promoted && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                  <Star size={10} fill="currentColor" />
+                  Promowane
+                </span>
+              )}
+              {age.isNew && (
+                <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Nowe
+                </span>
+              )}
+              <span className="rounded-full bg-ink-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-ink-600">
+                {listing.vehicle_type}
+              </span>
+              <span className="text-xs text-ink-400">dodane {age.label}</span>
+            </div>
+            <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-ink-900 sm:text-3xl">
+              {listing.title}
+            </h1>
+          </div>
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        {listing.is_promoted && (
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 text-sm font-semibold flex items-center">
-            <Star size={18} className="mr-2" fill="currentColor" />
-            Oferta Promowana
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              className="relative rounded-xl border border-ink-200 bg-white p-2.5 text-ink-600 transition-colors hover:border-ink-300 hover:text-ink-900"
+              title="Udostępnij"
+            >
+              {copied ? <Check size={19} className="text-emerald-600" /> : <Share2 size={19} />}
+            </button>
+            {user && listing.user_id === user.id && onEdit && (
+              <button
+                onClick={() => onEdit(listing)}
+                className="rounded-xl border border-ink-200 bg-white p-2.5 text-ink-600 transition-colors hover:border-ink-300 hover:text-ink-900"
+                title="Edytuj ogłoszenie"
+              >
+                <Edit size={19} />
+              </button>
+            )}
+            <button
+              onClick={toggleFavorite}
+              aria-label={isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+              className={`rounded-xl border p-2.5 transition-colors ${
+                isFavorite
+                  ? 'border-rose-200 bg-rose-50 text-rose-600'
+                  : 'border-ink-200 bg-white text-ink-600 hover:border-ink-300 hover:text-rose-500'
+              }`}
+            >
+              <Heart size={19} fill={isFavorite ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+        </header>
+
+        {age.isStale && (
+          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <AlertTriangle size={17} className="shrink-0 text-amber-600" />
+            <p className="flex-1 text-sm text-amber-900">
+              To ogłoszenie wisi już {age.days} dni. Zapytaj właściciela, czy cesja jest jeszcze dostępna.
+            </p>
+            <button
+              onClick={() => {
+                setReportReason('nieaktualne');
+                setReportOpen(true);
+              }}
+              className="text-sm font-semibold text-amber-800 underline hover:text-amber-900"
+            >
+              Zgłoś jako nieaktualne
+            </button>
           </div>
         )}
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div>
+        <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr] lg:items-start">
+          <div className="space-y-6">
+            <div className="overflow-hidden rounded-3xl border border-ink-100 bg-white p-3 shadow-soft">
               <div
-                className="relative aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden mb-4 cursor-zoom-in"
+                className="group relative aspect-[16/10] cursor-zoom-in overflow-hidden rounded-2xl bg-ink-100"
                 onClick={() => openLightbox(currentImageIndex)}
               >
-                <img
-                  src={images[currentImageIndex]}
-                  alt={listing.title}
-                  className="w-full h-full object-contain"
-                />
+                <img src={images[currentImageIndex]} alt={listing.title} className="h-full w-full object-contain" />
+
+                <span className="absolute right-3 top-3 rounded-full bg-ink-950/70 p-2 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+                  <Maximize2 size={15} />
+                </span>
 
                 {images.length > 1 && (
                   <>
@@ -525,21 +606,22 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                         e.stopPropagation();
                         prevImage();
                       }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/75 hover:bg-white rounded-full p-2 transition"
+                      aria-label="Poprzednie zdjęcie"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2.5 text-ink-800 shadow-soft backdrop-blur transition-colors hover:bg-white"
                     >
-                      <ChevronLeft size={24} />
+                      <ChevronLeft size={20} />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         nextImage();
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/75 hover:bg-white rounded-full p-2 transition"
+                      aria-label="Następne zdjęcie"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2.5 text-ink-800 shadow-soft backdrop-blur transition-colors hover:bg-white"
                     >
-                      <ChevronRight size={24} />
+                      <ChevronRight size={20} />
                     </button>
-
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-ink-950/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
                       {currentImageIndex + 1} / {images.length}
                     </div>
                   </>
@@ -547,412 +629,385 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
               </div>
 
               {images.length > 1 && (
-                <div className="grid grid-cols-6 gap-3">
+                <div className="scrollbar-hide mt-3 flex gap-2 overflow-x-auto">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`aspect-square rounded-lg overflow-hidden transition ${
+                      aria-label={`Zdjęcie ${idx + 1}`}
+                      className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl transition ${
                         currentImageIndex === idx
-                          ? 'ring-2 ring-amber-500 ring-offset-2'
-                          : 'border-2 border-gray-200 hover:border-gray-400'
+                          ? 'ring-2 ring-accent-500 ring-offset-2'
+                          : 'opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleShare}
-                    className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition relative group"
-                    title="Udostępnij"
-                  >
-                    {copied ? <Check size={24} className="text-green-600" /> : <Share2 size={24} />}
-                    {copied && (
-                      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                        Link skopiowany!
-                      </div>
+            <section className="rounded-3xl border border-ink-100 bg-white p-6 shadow-soft">
+              <h2 className="font-display text-lg font-bold text-ink-900">Parametry pojazdu</h2>
+              <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+                {specs.map((spec) => (
+                  <div key={spec.label}>
+                    <dt className="text-[11px] font-medium uppercase tracking-wide text-ink-400">{spec.label}</dt>
+                    <dd className="mt-0.5 truncate text-sm font-semibold capitalize text-ink-900">{spec.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section className="rounded-3xl border border-ink-100 bg-white p-6 shadow-soft">
+              <h2 className="font-display text-lg font-bold text-ink-900">Opis od właściciela</h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-600">{listing.description}</p>
+            </section>
+
+            <section className="rounded-3xl border border-ink-100 bg-white p-6 shadow-soft">
+              <h2 className="font-display text-lg font-bold text-ink-900">Co dalej po kontakcie</h2>
+              <ol className="mt-4 space-y-3">
+                {[
+                  'Ustalacie odstępne, termin przekazania pojazdu i kto pokrywa opłatę manipulacyjną leasingodawcy.',
+                  'Składasz do firmy leasingowej wniosek o cesję razem z dokumentami potwierdzającymi zdolność finansową.',
+                  'Leasingodawca weryfikuje Cię i wyraża zgodę — bez niej cesja nie może dojść do skutku.',
+                  'Wszystkie trzy strony podpisują aneks, a pojazd i umowa przechodzą na Ciebie.',
+                ].map((step, index) => (
+                  <li key={index} className="flex gap-3 text-sm leading-relaxed text-ink-600">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-ink-900 text-[11px] font-bold text-white">
+                      {index + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-4 border-t border-ink-100 pt-4 text-xs leading-relaxed text-ink-400">
+                Cesly.pl kojarzy strony i nie jest stroną umowy leasingowej. Przed wpłatą odstępnego sprawdź
+                umowę, stan pojazdu i potwierdź warunki bezpośrednio u leasingodawcy.
+              </p>
+            </section>
+
+            <div className="flex items-center justify-between text-sm text-ink-400">
+              <span className="flex items-center gap-1.5">
+                <Calendar size={15} />
+                Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
+              </span>
+              <button
+                onClick={() => setReportOpen(true)}
+                className="underline transition-colors hover:text-rose-600"
+              >
+                Zgłoś ogłoszenie
+              </button>
+            </div>
+          </div>
+
+          <aside className="space-y-4 lg:sticky lg:top-24">
+            <div className="overflow-hidden rounded-3xl border border-ink-100 bg-white shadow-card">
+              <div className="bg-ink-950 px-6 py-5 text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-300">Rata miesięczna</p>
+                <p className="mt-1 font-display text-4xl font-extrabold tracking-tight">
+                  {formatPLN(listing.monthly_payment)}
+                </p>
+                <div className="mt-4 rounded-2xl bg-white/[0.07] px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-xs font-medium text-ink-200">Realny koszt / mies.</span>
+                    <span className="font-display text-lg font-bold text-accent-400">
+                      {formatPLN(costs.effectiveMonthly)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-ink-300">
+                    Rata + odstępne rozłożone na {costs.monthsLeft || '—'} pozostałych rat.
+                  </p>
+                </div>
+              </div>
+
+              <dl className="divide-y divide-ink-100 px-6">
+                <div className="flex items-center justify-between py-3">
+                  <dt className="text-sm text-ink-500">Odstępne</dt>
+                  <dd className="text-sm font-bold text-ink-900">
+                    {listing.transfer_fee > 0 ? formatPLN(listing.transfer_fee) : 'brak'}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <dt className="text-sm text-ink-500">Pozostałe raty</dt>
+                  <dd className="text-sm font-bold text-ink-900">
+                    {listing.remaining_installments} z {listing.total_installments}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <dt className="text-sm text-ink-500">Koszt do końca umowy</dt>
+                  <dd className="text-sm font-bold text-ink-900">{formatPLN(costs.takeoverCost)}</dd>
+                </div>
+                {!!listing.buyout_price && (
+                  <>
+                    <div className="flex items-center justify-between py-3">
+                      <dt className="text-sm text-ink-500">Wykup na koniec</dt>
+                      <dd className="text-sm font-bold text-ink-900">{formatPLN(listing.buyout_price)}</dd>
+                    </div>
+                    <div className="flex items-center justify-between py-3">
+                      <dt className="text-sm font-medium text-ink-700">Razem z wykupem</dt>
+                      <dd className="font-display text-base font-extrabold text-ink-900">
+                        {formatPLN(costs.costWithBuyout)}
+                      </dd>
+                    </div>
+                  </>
+                )}
+              </dl>
+
+              <div className="p-6 pt-4">
+                {hasContact && (
+                  <div className="space-y-2">
+                    {sellerProfile?.name && (
+                      <p className="text-sm text-ink-600">
+                        <span className="font-medium">Kontakt:</span> {sellerProfile.name}
+                      </p>
                     )}
-                  </button>
-                  {user && listing.user_id === user.id && onEdit && (
-                    <button
-                      onClick={() => onEdit(listing)}
-                      className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
-                      title="Edytuj ogłoszenie"
-                    >
-                      <Edit size={24} />
-                    </button>
-                  )}
-                  <button
-                    onClick={toggleFavorite}
-                    className={`p-2 rounded-full transition ${
-                      isFavorite
-                        ? 'bg-red-100 text-red-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                  {listing.vehicle_type}
-                </span>
-                <span className="inline-block ml-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                  {listing.brand} {listing.model} ({listing.year})
-                </span>
-              </div>
-
-              <div className="bg-blue-50 rounded-lg p-4 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Parametry finansowe
-                </h2>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Rata miesięczna:</span>
-                    <span className="text-2xl font-bold text-blue-600">
-                      {listing.monthly_payment.toLocaleString('pl-PL')} zł
-                    </span>
+                    {sellerProfile?.phone && (
+                      <a
+                        href={`tel:${sellerProfile.phone}`}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-4 py-3.5 text-sm font-bold text-white transition-all hover:bg-accent-600 hover:shadow-glow"
+                      >
+                        <Phone size={17} />
+                        {sellerProfile.phone}
+                      </a>
+                    )}
+                    {sellerProfile?.email && (
+                      <a
+                        href={`mailto:${sellerProfile.email}`}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-ink-200 px-4 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-ink-300 hover:bg-ink-50"
+                      >
+                        <Mail size={16} />
+                        Napisz e-mail
+                      </a>
+                    )}
                   </div>
+                )}
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Odstępne:</span>
-                    <span className="text-xl font-bold text-gray-900">
-                      {listing.transfer_fee.toLocaleString('pl-PL')} zł
-                    </span>
-                  </div>
-
-                  {!!listing.buyout_price && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-700 font-medium">Cena wykupu:</span>
-                      <span className="text-xl font-bold text-gray-900">
-                        {listing.buyout_price.toLocaleString('pl-PL')} zł
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-3 border-t border-blue-200">
-                    <span className="text-gray-700 font-medium">Pozostałe raty:</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {listing.remaining_installments} z {listing.total_installments}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {(() => {
-                const deal = calculateDealScore(listing);
-                if (!deal || deal.score < 5.5) return null;
-                const gain = deal.marketValue - deal.totalCost;
-                return (
-                  <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 mb-6 text-white shadow-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp size={18} className="text-emerald-400" />
-                        <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Opłacalność cesji</span>
-                      </div>
-                      <div className={`bg-gradient-to-br ${deal.colorClass} px-3 py-1 rounded-lg flex items-center gap-1.5`}>
-                        <Star size={13} fill="currentColor" />
-                        <span className="text-sm font-black">{deal.score.toFixed(1)}/10</span>
-                        <span className="text-xs font-semibold">{deal.label}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2 text-sm mb-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Szacowana wartość rynkowa</span>
-                        <span className="font-semibold">{deal.marketValue.toLocaleString('pl-PL')} zł</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Całkowity koszt przejęcia (odstępne + raty + wykup)</span>
-                        <span className="font-semibold text-red-300">− {deal.totalCost.toLocaleString('pl-PL')} zł</span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-slate-600">
-                        <span className="text-slate-300 font-medium">Różnica</span>
-                        <span className={`text-lg font-black ${gain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {gain >= 0 ? '+' : ''}{gain.toLocaleString('pl-PL')} zł
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{DEAL_SCORE_EXPLANATION}</p>
-                  </div>
-                );
-              })()}
-
-              {((sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) || (user && listing.user_id !== user.id)) && (
-                <div className="bg-amber-50 rounded-2xl p-4 mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-3">Skontaktuj się ze sprzedającym</h2>
-
-                  {(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) && (
-                    <div className="space-y-2 mb-4">
-                      {sellerProfile.name && (
-                        <div className="flex items-center text-gray-700">
-                          <span className="font-medium mr-2">Kontakt:</span>
-                          <span className="text-gray-900">{sellerProfile.name}</span>
-                        </div>
-                      )}
-                      {sellerProfile.email && (
-                        <div className="flex items-center text-gray-700">
-                          <span className="font-medium mr-2">Email:</span>
-                          <a href={`mailto:${sellerProfile.email}`} className="text-blue-600 hover:underline">
-                            {sellerProfile.email}
-                          </a>
-                        </div>
-                      )}
-                      {sellerProfile.phone && (
-                        <div className="flex items-center text-gray-700">
-                          <span className="font-medium mr-2">Telefon:</span>
-                          <a href={`tel:${sellerProfile.phone}`} className="text-blue-600 hover:underline">
-                            {sellerProfile.phone}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {user && listing.user_id !== user.id && (
-                    <div className={(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name) ? 'pt-4 border-t border-amber-200' : ''}>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Napisz wiadomość</h3>
-                      {messageSent ? (
-                        <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                          Wiadomość wysłana. Odpowiedź znajdziesz w swoim profilu, w zakładce "Wiadomości".
-                        </p>
-                      ) : (
-                        <>
-                          <textarea
-                            value={messageText}
-                            onChange={(e) => setMessageText(e.target.value)}
-                            placeholder="Napisz wiadomość do właściciela ogłoszenia..."
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                          />
-                          {messageError && <p className="text-xs text-red-600 mt-1">{messageError}</p>}
-                          <button
-                            onClick={handleSendMessage}
-                            disabled={sendingMessage || !messageText.trim()}
-                            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            {sendingMessage ? 'Wysyłanie...' : 'Wyślij wiadomość'}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                <div className="flex items-center">
-                  <Calendar size={16} className="mr-2" />
-                  Dodano: {new Date(listing.created_at).toLocaleDateString('pl-PL')}
-                </div>
-                <button
-                  onClick={() => setReportOpen(true)}
-                  className="text-gray-400 hover:text-red-600 underline transition-colors"
-                >
-                  Zgłoś ogłoszenie
-                </button>
-              </div>
-
-              {reportOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
-                  <div className="bg-white rounded-lg p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Zgłoś ogłoszenie</h3>
-                    {reportSent ? (
-                      <p className="text-sm text-emerald-700">Dziękujemy za zgłoszenie. Sprawdzimy je jak najszybciej.</p>
+                {canMessage && (
+                  <div className={hasContact ? 'mt-4 border-t border-ink-100 pt-4' : ''}>
+                    <h3 className="text-sm font-bold text-ink-900">Napisz przez serwis</h3>
+                    {messageSent ? (
+                      <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                        Wiadomość wysłana. Odpowiedź znajdziesz w profilu, w zakładce „Wiadomości”.
+                      </p>
                     ) : (
                       <>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Powód</label>
-                        <select
-                          value={reportReason}
-                          onChange={(e) => setReportReason(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-3"
-                        >
-                          <option value="nieaktualne">Ogłoszenie nieaktualne</option>
-                          <option value="oszustwo">Podejrzenie oszustwa</option>
-                          <option value="nieprawdziwe_dane">Nieprawdziwe dane / cena</option>
-                          <option value="duplikat">Duplikat ogłoszenia</option>
-                          <option value="inne">Inne</option>
-                        </select>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Dodatkowe informacje (opcjonalnie)</label>
                         <textarea
-                          value={reportMessage}
-                          onChange={(e) => setReportMessage(e.target.value)}
+                          id="wiadomosc"
+                          value={messageText}
+                          onChange={(e) => setMessageText(e.target.value)}
+                          placeholder="Dzień dobry, czy cesja jest jeszcze aktualna?"
                           rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-4"
+                          className="field mt-2 resize-none"
                         />
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => setReportOpen(false)}
-                            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-                          >
-                            Anuluj
-                          </button>
-                          <button
-                            onClick={handleSendReport}
-                            disabled={sendingReport}
-                            className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                          >
-                            {sendingReport ? 'Wysyłanie...' : 'Zgłoś'}
-                          </button>
-                        </div>
+                        {messageError && <p className="mt-1 text-xs text-rose-600">{messageError}</p>}
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={sendingMessage || !messageText.trim()}
+                          className="btn-accent mt-2 w-full disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <MessageSquare size={16} />
+                          {sendingMessage ? 'Wysyłanie…' : 'Wyślij wiadomość'}
+                        </button>
                       </>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
+                )}
 
-          <div className="border-t border-gray-200 pt-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">Opis</h2>
-            <p className="text-gray-700 whitespace-pre-wrap">{listing.description}</p>
-          </div>
-        </div>
+                {!hasContact && !canMessage && (
+                  <p className="text-sm text-ink-500">
+                    Zaloguj się, aby napisać do właściciela tego ogłoszenia.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {deal && deal.score >= DEAL_SCORE_BADGE_THRESHOLD && (
+              <div className="rounded-3xl border border-ink-100 bg-white p-5 shadow-soft">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                    <TrendingUp size={16} className="text-emerald-600" />
+                    Opłacalność cesji
+                  </h3>
+                  <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                    {deal.label}
+                  </span>
+                </div>
+                <dl className="mt-4 space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-500">Szacowana wartość rynkowa</dt>
+                    <dd className="font-semibold text-ink-900">{formatPLN(deal.marketValue)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-500">Całkowity koszt przejęcia</dt>
+                    <dd className="font-semibold text-ink-900">− {formatPLN(deal.totalCost)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 border-t border-ink-100 pt-2">
+                    <dt className="font-medium text-ink-700">Różnica</dt>
+                    <dd
+                      className={`font-display text-base font-extrabold ${
+                        deal.marketValue - deal.totalCost >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                      }`}
+                    >
+                      {deal.marketValue - deal.totalCost >= 0 ? '+' : ''}
+                      {formatPLN(deal.marketValue - deal.totalCost)}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-[11px] leading-relaxed text-ink-400">{DEAL_SCORE_EXPLANATION}</p>
+              </div>
+            )}
+          </aside>
         </div>
 
         {suggestedListings.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Proponowane ogłoszenia</h2>
-            <div className="relative">
-              <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scrollbar-hide">
-                {suggestedListings.map((suggestedListing) => {
-                  const mainImage = suggestedListing.images && suggestedListing.images.length > 0
-                    ? suggestedListing.images[0]
-                    : 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=600';
-
-                  return (
-                    <a
-                      key={suggestedListing.id}
-                      href={`/listing/${suggestedListing.id}`}
-                      onClick={(e) => {
-                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-                        e.preventDefault();
-                        if (onViewListing) {
-                          onViewListing(suggestedListing.id);
-                        } else {
-                          window.history.pushState({}, '', `/listing/${suggestedListing.id}`);
-                        }
-                      }}
-                      className="flex-none w-72 snap-start block"
-                    >
-                      <div className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:shadow-amber-500/20 transition-all cursor-pointer border border-gray-200 hover:border-amber-400 hover:scale-[1.02] duration-300">
-                        {suggestedListing.is_promoted && (
-                          <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white px-2 py-1 text-xs font-bold flex items-center">
-                            <Star size={14} className="mr-1" fill="currentColor" />
-                            PROMOWANE
-                          </div>
-                        )}
-
-                        <div className="aspect-square w-full overflow-hidden bg-gray-100 relative">
-                          <img
-                            src={mainImage}
-                            alt={suggestedListing.title}
-                            loading="lazy"
-                            className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/10 to-transparent"></div>
-                          <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full">
-                            <span className="text-amber-600 text-xs font-bold uppercase tracking-wide">
-                              {suggestedListing.vehicle_type}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="p-4">
-                          <h3 className="text-base font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-amber-600 transition-colors">
-                            {suggestedListing.title}
-                          </h3>
-
-                          <div className="space-y-2 mb-3">
-                            <div className="flex justify-between text-sm items-center">
-                              <span className="text-gray-600">Rata:</span>
-                              <span className="font-bold text-amber-600">
-                                {suggestedListing.monthly_payment.toLocaleString('pl-PL')} zł
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Odstępne:</span>
-                              <span className="font-semibold text-gray-900">
-                                {suggestedListing.transfer_fee.toLocaleString('pl-PL')} zł
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Pozostałe raty:</span>
-                              <span className="font-semibold text-gray-900">
-                                {suggestedListing.remaining_installments} / {suggestedListing.total_installments}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center text-xs text-gray-500 pt-2 border-t border-gray-200">
-                            <Calendar size={13} className="mr-1" />
-                            {new Date(suggestedListing.created_at).toLocaleDateString('pl-PL')}
-                          </div>
-                        </div>
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
+          <section className="mt-14">
+            <h2 className="font-display text-xl font-extrabold tracking-tight text-ink-900 sm:text-2xl">
+              Podobne cesje
+            </h2>
+            <div className="scrollbar-hide -mx-1 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-2">
+              {suggestedListings.map((suggested, index) => (
+                <div key={suggested.id} className="w-60 shrink-0 snap-start sm:w-64">
+                  <ListingCard
+                    listing={suggested}
+                    index={index}
+                    onView={() => {
+                      if (onViewListing) onViewListing(suggested.id);
+                      else window.history.pushState({}, '', `/listing/${suggested.id}`);
+                    }}
+                  />
+                </div>
+              ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
 
-      {lightboxOpen && (
+      {/* Mobile: the contact action follows the visitor down the page. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-white/95 p-3 backdrop-blur lg:hidden">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-lg font-extrabold text-ink-900">
+              {formatPLN(listing.monthly_payment)}
+              <span className="ml-1 text-xs font-medium text-ink-400">/mies.</span>
+            </p>
+            <p className="truncate text-[11px] text-ink-500">
+              realnie {formatPLN(costs.effectiveMonthly)} / mies.
+            </p>
+          </div>
+          {sellerProfile?.phone ? (
+            <a href={`tel:${sellerProfile.phone}`} className="btn-accent shrink-0">
+              <Phone size={17} />
+              Zadzwoń
+            </a>
+          ) : (
+            <a href="#wiadomosc" className="btn-accent shrink-0">
+              <MessageSquare size={17} />
+              Napisz
+            </a>
+          )}
+        </div>
+      </div>
+
+      {reportOpen && (
         <div
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
-          onClick={closeLightbox}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4"
+          onClick={() => setReportOpen(false)}
         >
+          <div
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-lift"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-lg font-bold text-ink-900">Zgłoś ogłoszenie</h3>
+            {reportSent ? (
+              <p className="mt-3 text-sm text-emerald-700">Dziękujemy za zgłoszenie. Sprawdzimy je jak najszybciej.</p>
+            ) : (
+              <>
+                <label className="mt-4 block text-xs font-semibold text-ink-600">Powód</label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="field mt-1.5"
+                >
+                  <option value="nieaktualne">Ogłoszenie nieaktualne</option>
+                  <option value="oszustwo">Podejrzenie oszustwa</option>
+                  <option value="nieprawdziwe_dane">Nieprawdziwe dane / cena</option>
+                  <option value="duplikat">Duplikat ogłoszenia</option>
+                  <option value="inne">Inne</option>
+                </select>
+                <label className="mt-4 block text-xs font-semibold text-ink-600">
+                  Dodatkowe informacje (opcjonalnie)
+                </label>
+                <textarea
+                  value={reportMessage}
+                  onChange={(e) => setReportMessage(e.target.value)}
+                  rows={3}
+                  className="field mt-1.5 resize-none"
+                />
+                <div className="mt-5 flex justify-end gap-2">
+                  <button onClick={() => setReportOpen(false)} className="btn-ghost">
+                    Anuluj
+                  </button>
+                  <button
+                    onClick={handleSendReport}
+                    disabled={sendingReport}
+                    className="inline-flex items-center justify-center rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
+                  >
+                    {sendingReport ? 'Wysyłanie…' : 'Zgłoś'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {lightboxOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/95" onClick={closeLightbox}>
           <button
             onClick={closeLightbox}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition"
+            aria-label="Zamknij"
+            className="absolute right-4 top-4 text-white transition-colors hover:text-ink-300"
           >
-            <X size={32} />
+            <X size={30} />
           </button>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              prevLightboxImage();
-            }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition"
-          >
-            <ChevronLeft size={48} />
-          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevLightboxImage();
+                }}
+                aria-label="Poprzednie zdjęcie"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white transition-colors hover:text-ink-300"
+              >
+                <ChevronLeft size={44} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextLightboxImage();
+                }}
+                aria-label="Następne zdjęcie"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white transition-colors hover:text-ink-300"
+              >
+                <ChevronRight size={44} />
+              </button>
+            </>
+          )}
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              nextLightboxImage();
-            }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition"
-          >
-            <ChevronRight size={48} />
-          </button>
-
-          <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center p-4">
+          <div className="flex h-full max-h-[90vh] w-full max-w-7xl items-center justify-center p-4">
             <img
               src={images[lightboxIndex]}
               alt={listing.title}
-              className="max-w-full max-h-full object-contain"
+              className="max-h-full max-w-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/75 text-white px-4 py-2 rounded-full">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-ink-950/80 px-4 py-2 text-sm text-white">
             {lightboxIndex + 1} / {images.length}
           </div>
         </div>

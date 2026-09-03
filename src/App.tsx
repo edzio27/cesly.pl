@@ -23,7 +23,7 @@ const PolitykaPrywatnosciPage = lazy(() => import('./components/PolitykaPrywatno
 function PageLoader() {
   return (
     <div className="flex items-center justify-center py-24">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-ink-200 border-t-accent-500"></div>
     </div>
   );
 }
@@ -47,10 +47,12 @@ function App() {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [pendingHomeFilters, setPendingHomeFilters] = useState<Record<string, string> | undefined>(undefined);
+  // HomePage seeds its filter state once, on mount. Bumping this key remounts
+  // it so footer category links work while the homepage is already open.
+  const [homeFiltersKey, setHomeFiltersKey] = useState(0);
 
   useEffect(() => {
     const path = window.location.pathname;
-    const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash;
 
     if (path === '/reset-password' || (hash && hash.includes('type=recovery'))) {
@@ -118,8 +120,8 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const handleNavigate = (page: Page) => {
-    setCurrentPage(page);
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page as Page);
 
     let url = '/';
     if (page === 'add-listing') url = '/add';
@@ -139,6 +141,7 @@ function App() {
     if (page !== 'add-listing') {
       setEditingListing(null);
     }
+    window.scrollTo({ top: 0 });
   };
 
   const handleViewListing = (id: string) => {
@@ -161,15 +164,24 @@ function App() {
 
   const handleApplySavedSearch = (filters: Record<string, string>) => {
     setPendingHomeFilters(filters);
+    setHomeFiltersKey((key) => key + 1);
     setCurrentPage('home');
     window.history.pushState({}, '', '/');
+    window.scrollTo({ top: 0 });
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-canvas-muted">
       <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
 
-      {currentPage === 'home' && <HomePage onViewListing={handleViewListing} initialFilters={pendingHomeFilters} onNavigate={handleNavigate} />}
+      {currentPage === 'home' && (
+        <HomePage
+          key={homeFiltersKey}
+          onViewListing={handleViewListing}
+          initialFilters={pendingHomeFilters}
+          onNavigate={handleNavigate}
+        />
+      )}
 
       {currentPage === 'listing-detail' && selectedListingId && (
         <ListingDetailPage

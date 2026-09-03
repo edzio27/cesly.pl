@@ -1,13 +1,29 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Star, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, TrendingUp, Users, Check, Bookmark, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Plus,
+  Star,
+  SearchX,
+  Bookmark,
+  ArrowRight,
+} from 'lucide-react';
 import { supabase, Listing } from '../lib/supabase';
-import { ListingCard } from './ListingCard';
-import { FeaturedCarousel } from './FeaturedCarousel';
-import { Logo } from './Logo';
+import { ListingCard, ListingCardSkeleton } from './ListingCard';
 import { AuthModal } from './AuthModal';
+import { FilterBar } from './FilterBar';
+import { HomeHero, HomeStats } from './HomeHero';
 import { calculateDealScore } from '../utils/dealScore';
+import { listingCosts } from '../utils/listingMetrics';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
+import { EMPTY_FILTERS, Filters, countActiveFilters } from '../types/filters';
+
+export type { Filters } from '../types/filters';
 
 type HomePageProps = {
   onViewListing: (id: string) => void;
@@ -15,93 +31,64 @@ type HomePageProps = {
   initialFilters?: Partial<Filters>;
 };
 
-export type Filters = {
-  vehicleType: string;
-  brand: string;
-  model: string;
-  minMonthlyPayment: string;
-  maxMonthlyPayment: string;
-  minTransferFee: string;
-  maxTransferFee: string;
-  maxRemainingInstallments: string;
-  minMileage: string;
-  maxMileage: string;
-  sortBy: string;
-};
-
 // Multiple of 12 (LCM of the grid's 2/3/4 responsive column counts) so the
 // last row is always fully filled before a next page is ever needed.
 const ITEMS_PER_PAGE = 24;
 
+// Realny koszt/mies., koszt do końca umowy and the market-value score are
+// derived from several columns, so Postgres cannot order by them. For those
+// three the matching rows are fetched once and sorted in the browser; every
+// other sort still runs server-side with a normal range query.
+const COMPUTED_SORTS = new Set(['effective_asc', 'total_asc', 'deal']);
+const MAX_CLIENT_SORT_ROWS = 1000;
+
 const POPULAR_BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Škoda', 'Toyota', 'Kia', 'Volvo'];
 
-const PRICE_RANGE_PRESETS: { label: string; min: string; max: string }[] = [
-  { label: 'do 500 zł', min: '', max: '500' },
-  { label: '500-1000 zł', min: '500', max: '1000' },
-  { label: '1000-2000 zł', min: '1000', max: '2000' },
-  { label: '2000-3000 zł', min: '2000', max: '3000' },
-  { label: '3000 zł i więcej', min: '3000', max: '' },
-];
-
 const HOW_IT_WORKS_STEPS: { title: string; description: string }[] = [
-  { title: 'Znajdź ofertę', description: 'Przeglądaj aktywne ogłoszenia — a jeśli chcesz oddać leasing, dodaj swoje ogłoszenie za darmo' },
-  { title: 'Skontaktuj się', description: 'Napisz do właściciela przez wiadomości w serwisie' },
-  { title: 'Uzgodnij warunki', description: 'Z obecnym leasingobiorcą i leasingodawcą' },
-  { title: 'Podpisz cesję', description: 'Leasingodawca zatwierdza, umowa przechodzi na Ciebie' },
+  {
+    title: 'Znajdź ofertę',
+    description: 'Filtruj po racie, odstępnym i liczbie pozostałych rat — a jeśli chcesz oddać leasing, dodaj ogłoszenie za darmo',
+  },
+  { title: 'Skontaktuj się', description: 'Napisz do właściciela przez wiadomości w serwisie albo zadzwoń' },
+  { title: 'Uzgodnij warunki', description: 'Z obecnym leasingobiorcą i leasingodawcą — odstępne, termin, dokumenty' },
+  { title: 'Podpisz cesję', description: 'Leasingodawca zatwierdza, umowa i pojazd przechodzą na Ciebie' },
 ];
 
 const FAQ_ITEMS = [
   {
     question: 'Czym jest cesja leasingu?',
-    answer: 'Cesja leasingu (przejęcie umowy leasingowej) to przeniesienie praw i obowiązków z dotychczasowego leasingobiorcy (cedenta) na nowego użytkownika (cesjonariusza). Nowa osoba przejmuje pozostałe raty leasingowe oraz prawo do korzystania z pojazdu, a leasingodawca musi wyrazić zgodę na taką zmianę.',
+    answer:
+      'Cesja leasingu (przejęcie umowy leasingowej) to przeniesienie praw i obowiązków z dotychczasowego leasingobiorcy (cedenta) na nowego użytkownika (cesjonariusza). Nowa osoba przejmuje pozostałe raty leasingowe oraz prawo do korzystania z pojazdu, a leasingodawca musi wyrazić zgodę na taką zmianę.',
   },
   {
     question: 'Ile kosztuje cesja leasingu?',
-    answer: 'Na koszt cesji składają się dwa elementy: odstępne płacone dotychczasowemu leasingobiorcy (ustalane indywidualnie między stronami, widoczne w każdym ogłoszeniu) oraz opłata manipulacyjna pobierana przez leasingodawcę za przepisanie umowy, zwykle w wysokości kilkuset złotych.',
+    answer:
+      'Na koszt cesji składają się dwa elementy: odstępne płacone dotychczasowemu leasingobiorcy (ustalane indywidualnie między stronami, widoczne w każdym ogłoszeniu) oraz opłata manipulacyjna pobierana przez leasingodawcę za przepisanie umowy, zwykle w wysokości kilkuset złotych.',
+  },
+  {
+    question: 'Co oznacza „realny koszt miesięczny” w ogłoszeniach?',
+    answer:
+      'To rata leasingowa powiększona o odstępne rozłożone na pozostałe raty. Dzięki temu można uczciwie porównać ofertę z niską ratą i wysokim odstępnym z ofertą, w której odstępnego nie ma wcale. Sama rata bywa myląca — auto za 800 zł miesięcznie z odstępnym 30 000 zł i 20 ratami do końca kosztuje realnie 2 300 zł na miesiąc.',
   },
   {
     question: 'Czy cesja leasingu wymaga zgody leasingodawcy?',
-    answer: 'Tak. Firma leasingowa musi zweryfikować nowego leasingobiorcę (m.in. jego zdolność finansową) i formalnie wyrazić zgodę na przeniesienie umowy, zanim cesja zostanie sfinalizowana.',
+    answer:
+      'Tak. Firma leasingowa musi zweryfikować nowego leasingobiorcę (m.in. jego zdolność finansową) i formalnie wyrazić zgodę na przeniesienie umowy, zanim cesja zostanie sfinalizowana.',
   },
   {
     question: 'Jakie dokumenty są potrzebne do przejęcia leasingu?',
-    answer: 'Zazwyczaj wymagany jest wniosek o cesję złożony do leasingodawcy, dokumenty potwierdzające sytuację finansową nowego leasingobiorcy (np. dla firm: dokumenty rejestrowe i finansowe), a po akceptacji — aneks do umowy leasingowej podpisywany przez wszystkie trzy strony.',
+    answer:
+      'Zazwyczaj wymagany jest wniosek o cesję złożony do leasingodawcy, dokumenty potwierdzające sytuację finansową nowego leasingobiorcy (np. dla firm: dokumenty rejestrowe i finansowe), a po akceptacji — aneks do umowy leasingowej podpisywany przez wszystkie trzy strony.',
   },
   {
     question: 'Czy przejęcie leasingu to dobry sposób na tańszy samochód?',
-    answer: 'Często tak — przejmując leasing, płacisz tylko pozostałe raty i odstępne, a nie pełną wartość pojazdu, co przy dobrze dobranej ofercie bywa tańsze niż zakup podobnego auta na rynku wtórnym lub zawarcie nowej umowy leasingowej.',
+    answer:
+      'Często tak — przejmując leasing, płacisz tylko pozostałe raty i odstępne, a nie pełną wartość pojazdu, co przy dobrze dobranej ofercie bywa tańsze niż zakup podobnego auta na rynku wtórnym lub zawarcie nowej umowy leasingowej.',
   },
 ];
 
-function AnimatedCounter({ target, prefix = '' }: { target: number; prefix?: string }) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setValue(target);
-      return;
-    }
-
-    const duration = 1200;
-    const start = performance.now();
-    let raf: number;
-
-    const tick = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(target * eased));
-      if (progress < 1) raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target]);
-
-  return <>{prefix}{value}</>;
-}
-
 function FaqSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   useEffect(() => {
     const structuredData = {
@@ -110,10 +97,7 @@ function FaqSection() {
       mainEntity: FAQ_ITEMS.map((item) => ({
         '@type': 'Question',
         name: item.question,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: item.answer,
-        },
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
       })),
     };
 
@@ -133,17 +117,25 @@ function FaqSection() {
       {FAQ_ITEMS.map((item, index) => {
         const isOpen = openIndex === index;
         return (
-          <div key={item.question} className="bg-white/80 rounded-xl border border-gray-200/50 overflow-hidden">
+          <div
+            key={item.question}
+            className={`overflow-hidden rounded-2xl border bg-white transition-colors ${
+              isOpen ? 'border-accent-200' : 'border-ink-100'
+            }`}
+          >
             <button
               onClick={() => setOpenIndex(isOpen ? null : index)}
-              className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+              aria-expanded={isOpen}
+              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
             >
-              <span className="font-semibold text-gray-900">{item.question}</span>
-              {isOpen ? <ChevronUp className="w-4 h-4 text-amber-600 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-amber-600 flex-shrink-0" />}
+              <span className="font-semibold text-ink-900">{item.question}</span>
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4 shrink-0 text-accent-600" />
+              ) : (
+                <ChevronDown className="h-4 w-4 shrink-0 text-ink-400" />
+              )}
             </button>
-            {isOpen && (
-              <p className="px-5 pb-4 text-sm text-gray-700 leading-relaxed">{item.answer}</p>
-            )}
+            {isOpen && <p className="px-5 pb-5 text-sm leading-relaxed text-ink-600">{item.answer}</p>}
           </div>
         );
       })}
@@ -151,61 +143,269 @@ function FaqSection() {
   );
 }
 
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString();
+}
+
 export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePageProps) {
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [rows, setRows] = useState<Listing[]>([]);
+  const [clientPaged, setClientPaged] = useState(false);
+  const [promoted, setPromoted] = useState<Listing[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [stats, setStats] = useState<HomeStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [savingSearch, setSavingSearch] = useState(false);
   const [searchSaved, setSearchSaved] = useState(false);
-  const [filters, setFilters] = useState<Filters>({
-    vehicleType: '',
-    brand: '',
-    model: '',
-    minMonthlyPayment: '',
-    maxMonthlyPayment: '',
-    minTransferFee: '',
-    maxTransferFee: '',
-    maxRemainingInstallments: '',
-    minMileage: '',
-    maxMileage: '',
-    sortBy: 'newest',
-    ...initialFilters,
-  });
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, ...initialFilters });
+  const [debouncedQuery, setDebouncedQuery] = useState(filters.q);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const activeFilterCount = countActiveFilters(filters);
 
-  const featuredListings = useMemo(() => {
-    if (currentPage !== 1) return [];
-    return listings
-      .filter((listing) => listing.is_promoted || (calculateDealScore(listing)?.score ?? 0) >= 8)
-      .slice(0, 8);
-  }, [listings, currentPage]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(filters.q), 350);
+    return () => clearTimeout(timer);
+  }, [filters.q]);
+
+  const queryFilters = useMemo<Filters>(() => ({ ...filters, q: debouncedQuery }), [filters, debouncedQuery]);
 
   useEffect(() => {
     document.title = 'Cesly.pl – Cesja leasingu i przejęcie umowy leasingowej';
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', 'Znajdź oferty cesji i przejęcia leasingu samochodów w całej Polsce. Przejmij raty leasingowe lub odstąp swój leasing – bezpiecznie i szybko.');
-    }
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute(
+        'content',
+        'Znajdź oferty cesji i przejęcia leasingu samochodów w całej Polsce. Filtruj po racie, odstępnym i liczbie rat. Dodaj własne ogłoszenie za darmo.',
+      );
     trackPageView('home');
   }, []);
 
+  const fetchListings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const isComputedSort = COMPUTED_SORTS.has(queryFilters.sortBy);
+
+      let query = supabase
+        .from('listings')
+        .select('*', { count: 'exact' })
+        // Drafts and rejected imports were previously served to visitors
+        // alongside real offers.
+        .eq('status', 'published');
+
+      const term = queryFilters.q.trim().replace(/[,()]/g, ' ');
+      if (term) {
+        query = query.or(
+          [`title.ilike.%${term}%`, `brand.ilike.%${term}%`, `model.ilike.%${term}%`, `description.ilike.%${term}%`].join(','),
+        );
+      }
+      if (queryFilters.vehicleType) query = query.eq('vehicle_type', queryFilters.vehicleType);
+      if (queryFilters.brand) query = query.ilike('brand', `%${queryFilters.brand}%`);
+      if (queryFilters.model) query = query.ilike('model', `%${queryFilters.model}%`);
+      if (queryFilters.minMonthlyPayment) query = query.gte('monthly_payment', Number(queryFilters.minMonthlyPayment));
+      if (queryFilters.maxMonthlyPayment) query = query.lte('monthly_payment', Number(queryFilters.maxMonthlyPayment));
+      if (queryFilters.noTransferFee) query = query.lte('transfer_fee', 0);
+      else {
+        if (queryFilters.minTransferFee) query = query.gte('transfer_fee', Number(queryFilters.minTransferFee));
+        if (queryFilters.maxTransferFee) query = query.lte('transfer_fee', Number(queryFilters.maxTransferFee));
+      }
+      if (queryFilters.minRemainingInstallments)
+        query = query.gte('remaining_installments', Number(queryFilters.minRemainingInstallments));
+      if (queryFilters.maxRemainingInstallments)
+        query = query.lte('remaining_installments', Number(queryFilters.maxRemainingInstallments));
+      if (queryFilters.minMileage) query = query.gte('mileage', Number(queryFilters.minMileage));
+      if (queryFilters.maxMileage) query = query.lte('mileage', Number(queryFilters.maxMileage));
+      if (queryFilters.minYear) query = query.gte('year', Number(queryFilters.minYear));
+      if (queryFilters.maxYear) query = query.lte('year', Number(queryFilters.maxYear));
+      if (queryFilters.freshDays) query = query.gte('created_at', daysAgoIso(Number(queryFilters.freshDays)));
+
+      if (isComputedSort) {
+        query = query.order('created_at', { ascending: false }).limit(MAX_CLIENT_SORT_ROWS);
+      } else {
+        query = query.order('is_promoted', { ascending: false });
+        switch (queryFilters.sortBy) {
+          case 'oldest':
+            query = query.order('created_at', { ascending: true });
+            break;
+          case 'price_asc':
+            query = query.order('monthly_payment', { ascending: true });
+            break;
+          case 'price_desc':
+            query = query.order('monthly_payment', { ascending: false });
+            break;
+          case 'fee_asc':
+            query = query.order('transfer_fee', { ascending: true });
+            break;
+          case 'installments_asc':
+            query = query.order('remaining_installments', { ascending: true });
+            break;
+          default:
+            query = query.order('created_at', { ascending: false });
+        }
+        const from = (currentPage - 1) * ITEMS_PER_PAGE;
+        query = query.range(from, from + ITEMS_PER_PAGE - 1);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      const fetched = data || [];
+
+      if (isComputedSort) {
+        const sorted = [...fetched].sort((a, b) => {
+          if (a.is_promoted !== b.is_promoted) return a.is_promoted ? -1 : 1;
+          if (queryFilters.sortBy === 'effective_asc')
+            return listingCosts(a).effectiveMonthly - listingCosts(b).effectiveMonthly;
+          if (queryFilters.sortBy === 'total_asc') return listingCosts(a).takeoverCost - listingCosts(b).takeoverCost;
+          return (calculateDealScore(b)?.score ?? -1) - (calculateDealScore(a)?.score ?? -1);
+        });
+        setRows(sorted);
+        setClientPaged(true);
+        setTotalItems(Math.min(count ?? sorted.length, sorted.length));
+      } else {
+        setRows(fetched);
+        setClientPaged(false);
+        setTotalItems(count ?? fetched.length);
+      }
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+      setRows([]);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [queryFilters, currentPage]);
+
   useEffect(() => {
     fetchListings();
-  }, [filters, currentPage]);
+  }, [fetchListings]);
+
+  // Promoted offers are a paid slot, so they get their own rail instead of
+  // being duplicated out of the grid below.
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'published')
+        .eq('is_promoted', true)
+        .order('created_at', { ascending: false })
+        .limit(8);
+      setPromoted(data || []);
+    })();
+  }, []);
 
   useEffect(() => {
-    if (currentPage > 1) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    (async () => {
+      const { data, count } = await supabase
+        .from('listings')
+        .select('monthly_payment, transfer_fee, created_at', { count: 'exact' })
+        .eq('status', 'published')
+        .limit(1000);
+
+      if (!data) return;
+      const weekAgo = Date.now() - 7 * 86_400_000;
+      setStats({
+        total: count ?? data.length,
+        addedThisWeek: data.filter((row) => new Date(row.created_at).getTime() >= weekAgo).length,
+        medianPayment: median(data.map((row) => Number(row.monthly_payment)).filter((value) => value > 0)),
+        noFeeCount: data.filter((row) => !Number(row.transfer_fee)).length,
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setFavorites(new Set());
+      return;
     }
-  }, [currentPage]);
+    (async () => {
+      const { data } = await supabase.from('favorites').select('listing_id').eq('user_id', user.id);
+      setFavorites(new Set((data || []).map((row) => row.listing_id as string)));
+    })();
+  }, [user]);
+
+  const handleChange = (patch: Partial<Filters>) => {
+    setFilters((prev) => ({ ...prev, ...patch }));
+    if (!('sortBy' in patch)) setCurrentPage(1);
+  };
+
+  const handleReset = () => {
+    setFilters({ ...EMPTY_FILTERS, sortBy: filters.sortBy });
+    setCurrentPage(1);
+  };
+
+  const scrollToResults = () => {
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const toggleFavorite = async (listing: Listing) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    const isFavorite = favorites.has(listing.id);
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (isFavorite) next.delete(listing.id);
+      else next.add(listing.id);
+      return next;
+    });
+    try {
+      if (isFavorite) {
+        await supabase.from('favorites').delete().eq('user_id', user.id).eq('listing_id', listing.id);
+      } else {
+        await supabase.from('favorites').insert({ user_id: user.id, listing_id: listing.id });
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (isFavorite) next.add(listing.id);
+        else next.delete(listing.id);
+        return next;
+      });
+    }
+  };
+
+  const handleSaveSearch = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    const suggested = [filters.q, filters.brand, filters.model, filters.vehicleType].filter(Boolean).join(' ');
+    const name = window.prompt('Nazwa zapisanego wyszukiwania:', suggested || 'Moje wyszukiwanie');
+    if (!name) return;
+
+    try {
+      const { error } = await supabase.from('saved_searches').insert({ user_id: user.id, name, filters });
+      if (error) throw error;
+      setSearchSaved(true);
+      setTimeout(() => setSearchSaved(false), 2500);
+    } catch (error) {
+      console.error('Error saving search:', error);
+    }
+  };
+
+  const visible = useMemo(() => {
+    if (!clientPaged) return rows;
+    const from = (currentPage - 1) * ITEMS_PER_PAGE;
+    return rows.slice(from, from + ITEMS_PER_PAGE);
+  }, [rows, clientPaged, currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
 
   useEffect(() => {
-    if (listings.length === 0) return;
+    if (rows.length === 0) return;
 
     const structuredData = {
       '@context': 'https://schema.org',
@@ -213,7 +413,7 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
       name: 'Oferty cesji leasingu',
       description: 'Aktualne ogłoszenia przejęcia i cesji umów leasingowych samochodów',
       numberOfItems: totalItems,
-      itemListElement: listings.map((listing, index) => ({
+      itemListElement: visible.map((listing, index) => ({
         '@type': 'ListItem',
         position: (currentPage - 1) * ITEMS_PER_PAGE + index + 1,
         url: `https://cesly.pl/listing/${listing.id}`,
@@ -233,524 +433,251 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
     return () => {
       document.getElementById('itemlist-structured-data')?.remove();
     };
-  }, [listings, currentPage, totalItems]);
+  }, [visible, rows.length, currentPage, totalItems]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters]);
-
-  const fetchListings = async () => {
-    setLoading(true);
-    try {
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      let query = supabase.from('listings').select('*', { count: 'exact' });
-
-      if (filters.vehicleType) {
-        query = query.eq('vehicle_type', filters.vehicleType);
-      }
-
-      if (filters.brand) {
-        query = query.ilike('brand', `%${filters.brand}%`);
-      }
-
-      if (filters.model) {
-        query = query.ilike('model', `%${filters.model}%`);
-      }
-
-      if (filters.minMonthlyPayment) {
-        query = query.gte('monthly_payment', parseFloat(filters.minMonthlyPayment));
-      }
-
-      if (filters.maxMonthlyPayment) {
-        query = query.lte('monthly_payment', parseFloat(filters.maxMonthlyPayment));
-      }
-
-      if (filters.minTransferFee) {
-        query = query.gte('transfer_fee', parseFloat(filters.minTransferFee));
-      }
-
-      if (filters.maxTransferFee) {
-        query = query.lte('transfer_fee', parseFloat(filters.maxTransferFee));
-      }
-
-      if (filters.maxRemainingInstallments) {
-        query = query.lte('remaining_installments', parseInt(filters.maxRemainingInstallments));
-      }
-
-      if (filters.minMileage) {
-        query = query.gte('mileage', parseInt(filters.minMileage));
-      }
-
-      if (filters.maxMileage) {
-        query = query.lte('mileage', parseInt(filters.maxMileage));
-      }
-
-      query = query.order('is_promoted', { ascending: false });
-
-      switch (filters.sortBy) {
-        case 'newest':
-          query = query.order('created_at', { ascending: false });
-          break;
-        case 'oldest':
-          query = query.order('created_at', { ascending: true });
-          break;
-        case 'price_asc':
-          query = query.order('monthly_payment', { ascending: true });
-          break;
-        case 'price_desc':
-          query = query.order('monthly_payment', { ascending: false });
-          break;
-        case 'installments_asc':
-          query = query.order('remaining_installments', { ascending: true });
-          break;
-      }
-
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      setListings(data || []);
-      setTotalItems(count || 0);
-    } catch (error) {
-      console.error('Error fetching listings:', error);
-    } finally {
-      setLoading(false);
-    }
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    scrollToResults();
   };
 
-  const handleFilterChange = (key: keyof Filters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSaveSearch = async () => {
-    if (!user) return;
-    const name = window.prompt('Nazwa zapisanego wyszukiwania:', [filters.brand, filters.model, filters.vehicleType].filter(Boolean).join(' ') || 'Moje wyszukiwanie');
-    if (!name) return;
-
-    setSavingSearch(true);
-    try {
-      const { error } = await supabase.from('saved_searches').insert({
-        user_id: user.id,
-        name,
-        filters,
-      });
-      if (error) throw error;
-      setSearchSaved(true);
-      setTimeout(() => setSearchSaved(false), 2500);
-    } catch (error) {
-      console.error('Error saving search:', error);
-    } finally {
-      setSavingSearch(false);
-    }
-  };
-
-  const generatePageNumbers = (): (number | string)[] => {
+  const pageNumbers = useMemo<(number | string)[]>(() => {
     const pages: (number | string)[] = [];
-    const showPages = 5;
-
-    if (totalPages <= showPages + 2) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push('...');
-      }
-
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (currentPage < totalPages - 2) {
-        pages.push('...');
-      }
-
-      pages.push(totalPages);
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      return pages;
     }
-
+    pages.push(1);
+    if (currentPage > 3) pages.push('…');
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+    if (currentPage < totalPages - 2) pages.push('…');
+    pages.push(totalPages);
     return pages;
-  };
+  }, [currentPage, totalPages]);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-200/40 rounded-full blur-3xl"></div>
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-orange-200/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-amber-100/20 rounded-full blur-3xl"></div>
-      </div>
+    <div className="bg-canvas-muted">
+      <HomeHero
+        filters={filters}
+        onChange={handleChange}
+        onSubmit={scrollToResults}
+        onAddListing={() => (user ? onNavigate('add-listing') : setShowAuthModal(true))}
+        stats={stats}
+      />
 
-      <section className="relative overflow-hidden bg-gradient-to-tr from-brand-navy to-brand-navy-light">
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex flex-col items-center">
-          <img
-            src="/hero-bg.png"
-            alt="Cesly.pl – Cesje i najmy. Przejmij leasing, zyskaj więcej."
-            className="w-full h-auto"
-          />
-          <div className="flex items-center gap-8 text-sm bg-black/30 backdrop-blur-sm rounded-full px-6 py-2.5 mt-2">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-amber-400" />
-              <span className="font-semibold text-white"><AnimatedCounter target={120} prefix="+" /> aktywnych ogłoszeń</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-amber-400" />
-              <span className="font-semibold text-white"><AnimatedCounter target={500} prefix="+" /> użytkowników</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <FilterBar
+        filters={filters}
+        onChange={handleChange}
+        onReset={handleReset}
+        resultCount={totalItems}
+        loading={loading}
+        canSaveSearch
+        onSaveSearch={handleSaveSearch}
+        searchSaved={searchSaved}
+      />
 
-      <section className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 text-center">Jak to działa</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {HOW_IT_WORKS_STEPS.map((step, index) => (
-              <div key={step.title} className="text-center">
-                <div className="inline-flex items-center justify-center w-10 h-10 bg-amber-500 text-white font-bold rounded-full mb-3">
-                  {index + 1}
+      <div ref={resultsRef} className="mx-auto max-w-7xl scroll-mt-32 px-4 py-8 sm:px-6 lg:px-8">
+        {promoted.length > 0 && activeFilterCount === 0 && (
+          <section className="mb-10">
+            <div className="mb-4 flex items-center gap-2">
+              <Star size={16} className="text-accent-500" fill="currentColor" />
+              <h2 className="font-display text-lg font-bold text-ink-900">Wyróżnione oferty</h2>
+            </div>
+            <div className="scrollbar-hide -mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-2">
+              {promoted.map((listing, index) => (
+                <div key={listing.id} className="w-60 shrink-0 snap-start sm:w-64">
+                  <ListingCard
+                    listing={listing}
+                    index={index}
+                    onView={() => onViewListing(listing.id)}
+                    isFavorite={favorites.has(listing.id)}
+                    onToggleFavorite={toggleFavorite}
+                  />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1.5">{step.title}</h3>
-                <p className="text-xs text-gray-600">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg mb-8 border border-gray-200/50">
-        <div className="px-6 py-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Typ pojazdu
-              </label>
-              <select
-                value={filters.vehicleType}
-                onChange={(e) => handleFilterChange('vehicleType', e.target.value)}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
-              >
-                <option value="">Wszystkie</option>
-                <option value="samochód">Samochód</option>
-                <option value="motocykl">Motocykl</option>
-                <option value="łódź">Łódź</option>
-                <option value="inne">Inne</option>
-              </select>
+              ))}
             </div>
+          </section>
+        )}
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Marka
-              </label>
-              <input
-                type="text"
-                value={filters.brand}
-                onChange={(e) => handleFilterChange('brand', e.target.value)}
-                placeholder="np. BMW, Audi..."
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Model
-              </label>
-              <input
-                type="text"
-                value={filters.model}
-                onChange={(e) => handleFilterChange('model', e.target.value)}
-                placeholder="np. X5, A4..."
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <label className="block text-xs font-semibold text-gray-700 mb-2">
-              Rata miesięczna — szybki wybór
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {PRICE_RANGE_PRESETS.map((preset) => {
-                const isActive = filters.minMonthlyPayment === preset.min && filters.maxMonthlyPayment === preset.max;
-                return (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => {
-                      handleFilterChange('minMonthlyPayment', isActive ? '' : preset.min);
-                      handleFilterChange('maxMonthlyPayment', isActive ? '' : preset.max);
-                    }}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
-                      isActive
-                        ? 'bg-amber-500 border-amber-500 text-white'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-amber-400 hover:text-amber-700'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
-            <button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
-            >
-              {showAdvancedFilters ? (
-                <>
-                  <ChevronUp className="w-4 h-4" />
-                  <span>Ukryj zaawansowane filtry</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4" />
-                  <span>Pokaż zaawansowane filtry</span>
-                </>
-              )}
-            </button>
-
-            {user && (
-              <button
-                onClick={handleSaveSearch}
-                disabled={savingSearch}
-                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-amber-700 transition-colors disabled:opacity-50"
-              >
-                <Bookmark className="w-4 h-4" />
-                <span>{searchSaved ? 'Zapisano!' : 'Zapisz to wyszukiwanie'}</span>
-              </button>
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-900">
+              {activeFilterCount > 0 ? 'Wyniki wyszukiwania' : 'Aktualne oferty przejęcia leasingu'}
+            </h2>
+            {!loading && totalItems > 0 && (
+              <p className="mt-1 text-sm text-ink-500">
+                Pokazujemy {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+                {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems.toLocaleString('pl-PL')}
+              </p>
             )}
           </div>
-
-          {showAdvancedFilters && (
-            <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Rata miesięczna (min)
-              </label>
-              <input
-                type="number"
-                value={filters.minMonthlyPayment}
-                onChange={(e) => handleFilterChange('minMonthlyPayment', e.target.value)}
-                placeholder="Od"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Rata miesięczna (max)
-              </label>
-              <input
-                type="number"
-                value={filters.maxMonthlyPayment}
-                onChange={(e) => handleFilterChange('maxMonthlyPayment', e.target.value)}
-                placeholder="Do"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Max. pozostałe raty
-              </label>
-              <input
-                type="number"
-                value={filters.maxRemainingInstallments}
-                onChange={(e) => handleFilterChange('maxRemainingInstallments', e.target.value)}
-                placeholder="Bez limitu"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 mt-3 border-t border-gray-200">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Min. odstępne (zł)
-              </label>
-              <input
-                type="number"
-                value={filters.minTransferFee}
-                onChange={(e) => handleFilterChange('minTransferFee', e.target.value)}
-                placeholder="0"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Max. odstępne (zł)
-              </label>
-              <input
-                type="number"
-                value={filters.maxTransferFee}
-                onChange={(e) => handleFilterChange('maxTransferFee', e.target.value)}
-                placeholder="Bez limitu"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 mt-3 border-t border-gray-200">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Min. przebieg (km)
-              </label>
-              <input
-                type="number"
-                value={filters.minMileage}
-                onChange={(e) => handleFilterChange('minMileage', e.target.value)}
-                placeholder="0"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Max. przebieg (km)
-              </label>
-              <input
-                type="number"
-                value={filters.maxMileage}
-                onChange={(e) => handleFilterChange('maxMileage', e.target.value)}
-                placeholder="Bez limitu"
-                className="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
-            </>
-          )}
         </div>
-      </div>
 
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
-          <p className="mt-4 text-gray-700">Ładowanie ofert...</p>
-        </div>
-      ) : listings.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-700 text-lg">Brak ofert spełniających kryteria</p>
-        </div>
-      ) : (
-        <>
-          {featuredListings.length > 0 && (
-            <FeaturedCarousel listings={featuredListings} onViewListing={onViewListing} />
-          )}
-
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">Aktualne oferty przejęcia leasingu</h2>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600 whitespace-nowrap">
-                {((currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} z {totalItems} {totalItems === 1 ? 'oferty' : 'ofert'}
-              </span>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
-              >
-                <option value="newest">Najnowsze</option>
-                <option value="oldest">Najstarsze</option>
-                <option value="price_asc">Rata: rosnąco</option>
-                <option value="price_desc">Rata: malejąco</option>
-                <option value="installments_asc">Najmniej rat</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-            {listings.map((listing, index) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                priority={currentPage === 1 && index < 4}
-                index={index}
-                onView={() => onViewListing(listing.id)}
-              />
+        {loading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <ListingCardSkeleton key={index} />
             ))}
           </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-10">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={18} />
-                Poprzednia
+        ) : visible.length === 0 ? (
+          <div className="rounded-3xl border border-ink-100 bg-white px-6 py-16 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-ink-50 text-ink-400">
+              <SearchX size={26} />
+            </div>
+            <h3 className="mt-4 font-display text-xl font-bold text-ink-900">Brak ofert dla tych kryteriów</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-ink-500">
+              Rynek cesji jest znacznie mniejszy niż rynek sprzedaży — spróbuj poluzować filtry albo zapisz
+              wyszukiwanie, żeby wrócić do niego później.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button onClick={handleReset} className="btn-accent">
+                <Search size={16} />
+                Wyczyść filtry
               </button>
-
-              <div className="flex items-center gap-1">
-                {generatePageNumbers().map((page, idx) => (
-                  page === '...' ? (
-                    <span key={`ellipsis-${idx}`} className="px-3 py-2 text-gray-500">...</span>
-                  ) : (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(Number(page))}
-                      className={`min-w-[44px] px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                        currentPage === page
-                          ? 'bg-amber-500 text-white shadow-md'
-                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                ))}
-              </div>
-
+              <button onClick={handleSaveSearch} className="btn-ghost">
+                <Bookmark size={16} />
+                Zapisz wyszukiwanie
+              </button>
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                onClick={() => (user ? onNavigate('add-listing') : setShowAuthModal(true))}
+                className="btn-ghost"
               >
-                Następna
-                <ChevronRight size={18} />
+                <Plus size={16} />
+                Dodaj własne ogłoszenie
               </button>
             </div>
-          )}
-        </>
-      )}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
+              {visible.map((listing, index) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  priority={currentPage === 1 && index < 4}
+                  index={index}
+                  onView={() => onViewListing(listing.id)}
+                  isFavorite={favorites.has(listing.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
 
-      <div className="mt-12 space-y-8">
-        <section className="bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 md:p-8">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">Czym jest cesja leasingu?</h2>
-          <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
-            Cesja leasingu, nazywana też przejęciem umowy leasingowej lub odstąpieniem leasingu, polega na przeniesieniu
-            praw i obowiązków z obecnego leasingobiorcy na nowego użytkownika. Cedent (osoba oddająca leasing) kończy
-            spłacanie rat, a cesjonariusz (osoba przejmująca) wchodzi w jego miejsce — przejmuje pozostałe raty
-            leasingowe oraz pojazd, płacąc cedentowi ustalone odstępne. Cała transakcja wymaga zgody leasingodawcy.
+            {totalPages > 1 && (
+              <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Paginacja">
+                <button
+                  onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="btn-ghost disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft size={17} />
+                  <span className="hidden sm:inline">Poprzednia</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {pageNumbers.map((page, index) =>
+                    page === '…' ? (
+                      <span key={`gap-${index}`} className="px-2 text-ink-400">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => goToPage(Number(page))}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                        className={`min-w-[42px] rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                          currentPage === page
+                            ? 'bg-ink-900 text-white'
+                            : 'border border-ink-200 bg-white text-ink-700 hover:border-ink-300'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
+                </div>
+
+                <button
+                  onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="btn-ghost disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="hidden sm:inline">Następna</span>
+                  <ChevronRight size={17} />
+                </button>
+              </nav>
+            )}
+          </>
+        )}
+      </div>
+
+      <section id="jak-to-dziala" className="scroll-mt-32 border-y border-ink-100 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">
+            Jak przebiega cesja leasingu
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-ink-500">
+            Cztery kroki od znalezienia ogłoszenia do podpisania aneksu.
           </p>
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Korzyści z przejęcia leasingu</h3>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Krótszy okres zobowiązania niż przy nowej umowie leasingowej</span></li>
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Możliwość przejęcia pojazdu poniżej jego wartości rynkowej</span></li>
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Uproszczona procedura w porównaniu z zakupem i nowym leasingiem</span></li>
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" /><span>Znana historia serwisowa i przebieg pojazdu od dotychczasowego użytkownika</span></li>
-          </ul>
+
+          <ol className="relative mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Connector line only where the steps sit in a single row. */}
+            <div className="absolute left-0 right-0 top-5 hidden h-px bg-gradient-to-r from-accent-200 via-accent-300 to-transparent lg:block" />
+            {HOW_IT_WORKS_STEPS.map((step, index) => (
+              <li key={step.title} className="relative">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-900 font-display text-sm font-bold text-white ring-4 ring-white">
+                  {index + 1}
+                </div>
+                <h3 className="mt-4 font-semibold text-ink-900">{step.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{step.description}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-7xl space-y-12 px-4 py-14 sm:px-6 lg:px-8">
+        <section className="grid gap-8 rounded-3xl border border-ink-100 bg-white p-6 md:p-10 lg:grid-cols-[1.3fr_1fr]">
+          <div>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-900">Czym jest cesja leasingu?</h2>
+            <p className="mt-3 text-sm leading-relaxed text-ink-600 md:text-base">
+              Cesja leasingu, nazywana też przejęciem umowy leasingowej lub odstąpieniem leasingu, polega na
+              przeniesieniu praw i obowiązków z obecnego leasingobiorcy na nowego użytkownika. Cedent (osoba
+              oddająca leasing) kończy spłacanie rat, a cesjonariusz (osoba przejmująca) wchodzi w jego miejsce —
+              przejmuje pozostałe raty leasingowe oraz pojazd, płacąc cedentowi ustalone odstępne. Cała
+              transakcja wymaga zgody leasingodawcy.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-ink-50 p-5">
+            <h3 className="font-semibold text-ink-900">Korzyści z przejęcia leasingu</h3>
+            <ul className="mt-3 space-y-2.5 text-sm text-ink-600">
+              {[
+                'Krótszy okres zobowiązania niż przy nowej umowie leasingowej',
+                'Możliwość przejęcia pojazdu poniżej jego wartości rynkowej',
+                'Uproszczona procedura w porównaniu z zakupem i nowym leasingiem',
+                'Znana historia serwisowa i przebieg pojazdu od dotychczasowego użytkownika',
+              ].map((benefit) => (
+                <li key={benefit} className="flex items-start gap-2.5">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <span>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
 
         <section>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Popularne wyszukiwania</h2>
-          <div className="flex flex-wrap gap-2">
+          <h2 className="font-display text-xl font-extrabold tracking-tight text-ink-900 sm:text-2xl">
+            Popularne wyszukiwania
+          </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
             {POPULAR_BRANDS.map((brand) => (
               <button
                 key={brand}
-                onClick={() => handleFilterChange('brand', brand)}
-                className="px-4 py-2 text-sm font-medium bg-white/80 border border-gray-300 rounded-full text-gray-700 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700 transition-colors"
+                onClick={() => {
+                  handleChange({ brand, model: '' });
+                  scrollToResults();
+                }}
+                className="chip py-2"
               >
                 Cesja leasingu {brand}
               </button>
@@ -758,30 +685,40 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
           </div>
         </section>
 
-        <section>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Najczęściej zadawane pytania</h2>
-          <FaqSection />
+        <section id="faq" className="scroll-mt-32">
+          <h2 className="font-display text-xl font-extrabold tracking-tight text-ink-900 sm:text-2xl">
+            Najczęściej zadawane pytania
+          </h2>
+          <div className="mt-4 max-w-3xl">
+            <FaqSection />
+          </div>
         </section>
       </div>
 
-      <section className="bg-brand-navy">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Chcesz oddać leasing?</h2>
-          <p className="text-gray-300 mb-6 max-w-xl mx-auto">
-            Dodaj ogłoszenie za darmo w kilka minut i znajdź kogoś, kto przejmie Twoje raty.
+      <section className="relative overflow-hidden bg-ink-950">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-accent-600/25 blur-[100px]" />
+          <div className="absolute inset-0 bg-grid-faint bg-grid [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
+        </div>
+        <div className="relative mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Chcesz oddać swój leasing?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-ink-200">
+            Dodaj ogłoszenie w kilka minut i znajdź kogoś, kto przejmie Twoje raty. Bezpłatnie, bez prowizji.
           </p>
           <button
             onClick={() => (user ? onNavigate('add-listing') : setShowAuthModal(true))}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-orange-500/30 hover:scale-105 transition-all"
+            className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-accent-500 px-7 py-4 text-base font-bold text-white transition-all hover:bg-accent-600 hover:shadow-glow active:scale-[0.99]"
           >
-            <Plus size={20} />
+            <Plus size={19} />
             Dodaj ogłoszenie za darmo
+            <ArrowRight size={18} />
           </button>
         </div>
       </section>
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      </div>
     </div>
   );
 }

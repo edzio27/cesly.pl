@@ -4,6 +4,42 @@ export default {
   theme: {
     extend: {
       colors: {
+        // ---------------------------------------------------------------
+        // Redesign 2026 tokens. The legacy amber/blue/orange overrides
+        // further down stay untouched so pages that haven't been
+        // reworked yet keep their current look; new surfaces use these.
+        // ---------------------------------------------------------------
+        ink: {
+          50: '#f4f6fb',
+          100: '#e6eaf4',
+          200: '#c7d0e5',
+          300: '#9aa8cb',
+          400: '#6577a5',
+          500: '#42527d',
+          600: '#2c3a60',
+          700: '#1d2a4c',
+          800: '#131d38',
+          900: '#0b1226',
+          950: '#050817',
+        },
+        accent: {
+          50: '#fff4ed',
+          100: '#ffe4d3',
+          200: '#ffc4a5',
+          300: '#ff9c6d',
+          400: '#ff7a45',
+          500: '#f2601f',
+          600: '#d94b13',
+          700: '#b43a12',
+          800: '#8f3016',
+          900: '#742a15',
+          950: '#3f1207',
+        },
+        canvas: {
+          DEFAULT: '#ffffff',
+          muted: '#f7f8fc',
+          sunken: '#eef1f8',
+        },
         'brand-navy': '#020636',
         'brand-navy-light': '#404367',
         'brand-blue': '#2563EB',
@@ -95,6 +131,13 @@ export default {
         },
       },
       fontFamily: {
+        display: [
+          '"Plus Jakarta Sans"',
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
         sans: [
           'Inter',
           'ui-sans-serif',
@@ -113,15 +156,45 @@ export default {
         lg: '10px',
         xl: '14px',
         '2xl': '18px',
+        '3xl': '24px',
+        '4xl': '32px',
+      },
+      boxShadow: {
+        soft: '0 1px 2px rgba(11, 18, 38, 0.04), 0 8px 24px -12px rgba(11, 18, 38, 0.12)',
+        card: '0 1px 2px rgba(11, 18, 38, 0.05), 0 12px 32px -16px rgba(11, 18, 38, 0.22)',
+        lift: '0 18px 48px -20px rgba(11, 18, 38, 0.40)',
+        glow: '0 12px 40px -12px rgba(242, 96, 31, 0.55)',
+      },
+      backgroundImage: {
+        'grid-faint':
+          'linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)',
+      },
+      backgroundSize: {
+        grid: '56px 56px',
       },
       keyframes: {
         fadeInUp: {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'translateY(-6px) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.5s ease-out both',
+        'scale-in': 'scaleIn 0.14s ease-out both',
+        shimmer: 'shimmer 1.6s linear infinite',
+        'float-slow': 'floatSlow 7s ease-in-out infinite',
       },
     },
   },

@@ -1,9 +1,21 @@
-import { Facebook } from 'lucide-react';
+import { Facebook, Mail, ArrowUpRight } from 'lucide-react';
+import { Logo } from './Logo';
 
 type FooterProps = {
   onNavigate: (page: string) => void;
   onApplyFilters: (filters: Record<string, string>) => void;
 };
+
+const CATEGORY_LINKS: { label: string; filters: Record<string, string> }[] = [
+  { label: 'Cesja leasingu samochodu', filters: { vehicleType: 'samochód' } },
+  { label: 'Cesja leasingu motocykla', filters: { vehicleType: 'motocykl' } },
+  { label: 'Cesja leasingu łodzi', filters: { vehicleType: 'łódź' } },
+  { label: 'Cesje bez odstępnego', filters: { noTransferFee: '1' } },
+  { label: 'Cesje z ratą do 1 000 zł', filters: { maxMonthlyPayment: '1000' } },
+  { label: 'Krótkie umowy — do 12 rat', filters: { maxRemainingInstallments: '12' } },
+];
+
+const BRAND_LINKS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Toyota', 'Škoda'];
 
 export function Footer({ onNavigate, onApplyFilters }: FooterProps) {
   const goTo = (page: string) => (e: React.MouseEvent) => {
@@ -12,69 +24,117 @@ export function Footer({ onNavigate, onApplyFilters }: FooterProps) {
   };
 
   return (
-    <footer className="bg-brand-navy text-gray-300 mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        <div>
-          <h3 className="text-white font-bold text-lg mb-2">Cesly.pl</h3>
-          <p className="text-sm text-gray-400">
-            Największa baza ogłoszeń cesji i przejęcia leasingu samochodów w Polsce.
-          </p>
-        </div>
+    <footer className="relative overflow-hidden bg-ink-950 text-ink-200">
+      <div className="pointer-events-none absolute inset-0 bg-grid-faint bg-grid [mask-image:linear-gradient(to_bottom,black,transparent_60%)]" aria-hidden="true" />
 
-        <div>
-          <h4 className="text-white font-semibold mb-2">Popularne kategorie</h4>
-          <ul className="space-y-1 text-sm">
-            <li>
-              <button onClick={() => onApplyFilters({ vehicleType: 'samochód' })} className="hover:text-amber-400 transition-colors">
-                Cesja leasingu samochodu
-              </button>
-            </li>
-            <li>
-              <button onClick={() => onApplyFilters({ vehicleType: 'motocykl' })} className="hover:text-amber-400 transition-colors">
-                Cesja leasingu motocykla
-              </button>
-            </li>
-            <li>
-              <button onClick={() => onApplyFilters({ vehicleType: 'łódź' })} className="hover:text-amber-400 transition-colors">
-                Cesja leasingu łodzi
-              </button>
-            </li>
-          </ul>
-        </div>
+      <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <Logo size={32} />
+              <span className="font-display text-lg font-extrabold tracking-tight text-white">
+                Cesly<span className="text-accent-400">.pl</span>
+              </span>
+            </div>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-300">
+              Portal wyłącznie o cesjach leasingu. Bez tysięcy ofert sprzedaży, bez szukania słowa „cesja”
+              w opisie — z filtrami, które w tej niszy naprawdę mają znaczenie.
+            </p>
+            <a
+              href="https://www.facebook.com/profile.php?id=61577465008887"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2 text-sm font-medium transition-colors hover:border-white/25 hover:text-white"
+            >
+              <Facebook size={16} />
+              Cesly.pl na Facebooku
+              <ArrowUpRight size={13} />
+            </a>
+          </div>
 
-        <div>
-          <h4 className="text-white font-semibold mb-2">Informacje</h4>
-          <ul className="space-y-1 text-sm">
-            <li>
-              <a href="/regulamin" onClick={goTo('regulamin')} className="hover:text-amber-400 transition-colors">
-                Regulamin
-              </a>
-            </li>
-            <li>
-              <a href="/polityka-prywatnosci" onClick={goTo('polityka-prywatnosci')} className="hover:text-amber-400 transition-colors">
-                Polityka Prywatności
-              </a>
-            </li>
-          </ul>
-        </div>
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white">Popularne kategorie</h4>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {CATEGORY_LINKS.map((link) => (
+                <li key={link.label}>
+                  <button
+                    onClick={() => onApplyFilters(link.filters)}
+                    className="text-left transition-colors hover:text-accent-400"
+                  >
+                    {link.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        <div>
-          <h4 className="text-white font-semibold mb-2">Kontakt</h4>
-          <p className="text-sm text-gray-400 mb-3">eugeniusz.keptia@gmail.com</p>
-          <a
-            href="https://www.facebook.com/profile.php?id=61577465008887"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-amber-400 transition-colors"
-          >
-            <Facebook size={16} />
-            Cesly.pl na Facebooku
-          </a>
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white">Marki</h4>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {BRAND_LINKS.map((brand) => (
+                <li key={brand}>
+                  <button
+                    onClick={() => onApplyFilters({ brand })}
+                    className="text-left transition-colors hover:text-accent-400"
+                  >
+                    Cesja leasingu {brand}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white">Serwis</h4>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              <li>
+                <a href="/add" onClick={goTo('add-listing')} className="transition-colors hover:text-accent-400">
+                  Dodaj ogłoszenie
+                </a>
+              </li>
+              <li>
+                <a href="/#jak-to-dziala" className="transition-colors hover:text-accent-400">
+                  Jak działa cesja
+                </a>
+              </li>
+              <li>
+                <a href="/#faq" className="transition-colors hover:text-accent-400">
+                  Pytania i odpowiedzi
+                </a>
+              </li>
+              <li>
+                <a href="/regulamin" onClick={goTo('regulamin')} className="transition-colors hover:text-accent-400">
+                  Regulamin
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/polityka-prywatnosci"
+                  onClick={goTo('polityka-prywatnosci')}
+                  className="transition-colors hover:text-accent-400"
+                >
+                  Polityka prywatności
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:eugeniusz.keptia@gmail.com"
+                  className="inline-flex items-center gap-1.5 transition-colors hover:text-accent-400"
+                >
+                  <Mail size={14} />
+                  Kontakt
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-white/10 py-4 text-center text-xs text-gray-500">
-        © {new Date().getFullYear()} Cesly.pl. Wszelkie prawa zastrzeżone.
+      <div className="relative border-t border-white/10 py-5">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 text-xs text-ink-400 sm:flex-row sm:px-6 lg:px-8">
+          <p>© {new Date().getFullYear()} Cesly.pl. Wszelkie prawa zastrzeżone.</p>
+          <p>Cesly.pl nie jest stroną umowy leasingowej ani pośrednikiem finansowym.</p>
+        </div>
       </div>
     </footer>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Navigation } from './components/Navigation';
 import { HomePage } from './components/HomePage';
 import { ListingDetailPage } from './components/ListingDetailPage';
@@ -222,6 +223,7 @@ function App() {
 
       <Footer onNavigate={handleNavigate} onApplyFilters={handleApplySavedSearch} />
       <CookieConsentBanner />
+      <Analytics />
     </div>
   );
 }

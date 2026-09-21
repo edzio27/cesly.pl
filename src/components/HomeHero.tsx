@@ -16,6 +16,12 @@ type HomeHeroProps = {
   onSubmit: () => void;
   onAddListing: () => void;
   stats: HomeStats | null;
+  /**
+   * H1 zakładki „Szukam cesji” — na stronie kategorii jej nazwa. Lista linii
+   * łamie nagłówek, a każda kolejna linia dostaje kolor akcentu.
+   */
+  heading: string | string[];
+  lead: string;
 };
 
 const QUICK_CHIPS: { label: string; patch: Partial<Filters> }[] = [
@@ -32,7 +38,7 @@ const SELLER_POINTS = [
   { icon: ShieldCheck, title: 'Tylko szukający cesji', text: 'Trafiasz do ludzi, którzy celowo szukają przejęcia leasingu, nie do przypadkowych.' },
 ];
 
-export function HomeHero({ filters, onChange, onSubmit, onAddListing, stats }: HomeHeroProps) {
+export function HomeHero({ filters, onChange, onSubmit, onAddListing, stats, heading, lead }: HomeHeroProps) {
   const [mode, setMode] = useState<'buy' | 'sell'>('buy');
 
   return (
@@ -68,13 +74,17 @@ export function HomeHero({ filters, onChange, onSubmit, onAddListing, stats }: H
         {mode === 'buy' ? (
           <>
             <h1 className="mt-6 max-w-3xl font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-white text-balance sm:text-5xl lg:text-6xl">
-              Wszystkie cesje leasingu
-              <span className="block text-accent-400">w jednym miejscu</span>
+              {(Array.isArray(heading) ? heading : [heading]).map((line, index) =>
+                index === 0 ? (
+                  line
+                ) : (
+                  <span key={line} className="block text-accent-400">
+                    {line}
+                  </span>
+                ),
+              )}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-200 sm:text-lg">
-              Filtruj po racie, odstępnym i liczbie pozostałych rat — a nie po słowie „cesja” w opisie.
-              Pokazujemy też realny koszt miesięczny, czyli ratę razem z rozłożonym odstępnym.
-            </p>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-200 sm:text-lg">{lead}</p>
 
             <div id="szukaj" className="mt-8 scroll-mt-24">
               <form

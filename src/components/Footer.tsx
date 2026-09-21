@@ -1,26 +1,43 @@
 import { Facebook, Mail, ArrowUpRight } from 'lucide-react';
 import { Logo } from './Logo';
+import { SeoCategory, categoryUrl, findCategory } from '../data/seoCategories';
 
 type FooterProps = {
   onNavigate: (page: string) => void;
-  onApplyFilters: (filters: Record<string, string>) => void;
+  onNavigateCategory: (slug: string) => void;
 };
 
-const CATEGORY_LINKS: { label: string; filters: Record<string, string> }[] = [
-  { label: 'Cesja leasingu samochodu', filters: { vehicleType: 'samochód' } },
-  { label: 'Cesja leasingu motocykla', filters: { vehicleType: 'motocykl' } },
-  { label: 'Cesja leasingu łodzi', filters: { vehicleType: 'łódź' } },
-  { label: 'Cesje bez odstępnego', filters: { noTransferFee: '1' } },
-  { label: 'Cesje z ratą do 1 000 zł', filters: { maxMonthlyPayment: '1000' } },
-  { label: 'Krótkie umowy — do 12 rat', filters: { maxRemainingInstallments: '12' } },
+// Wcześniej te pozycje były przyciskami nakładającymi filtry — dla Google
+// nie istniały, bo crawler nie klika w <button>. Teraz to prawdziwe <a href>
+// prowadzące pod adresy kategorii, które renderuje też funkcja `seo-page`.
+// To jedyne miejsce, z którego bot trafia ze strony głównej na kategorie.
+const CATEGORY_SLUGS = [
+  'samochody',
+  'motocykle',
+  'lodzie',
+  'bez-odstepnego',
+  'rata-do-1000-zl',
+  'krotkie-umowy',
 ];
 
-const BRAND_LINKS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Toyota', 'Škoda'];
+const BRAND_SLUGS = ['bmw', 'audi', 'mercedes-benz', 'volkswagen', 'toyota', 'skoda'];
 
-export function Footer({ onNavigate, onApplyFilters }: FooterProps) {
+function pick(slugs: string[]): SeoCategory[] {
+  return slugs.map((slug) => findCategory(slug)).filter((entry): entry is SeoCategory => entry !== null);
+}
+
+const CATEGORY_LINKS = pick(CATEGORY_SLUGS);
+const BRAND_LINKS = pick(BRAND_SLUGS);
+
+export function Footer({ onNavigate, onNavigateCategory }: FooterProps) {
   const goTo = (page: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     onNavigate(page);
+  };
+
+  const goToCategory = (slug: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    onNavigateCategory(slug);
   };
 
   return (
@@ -55,14 +72,15 @@ export function Footer({ onNavigate, onApplyFilters }: FooterProps) {
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider text-white">Popularne kategorie</h4>
             <ul className="mt-4 space-y-2.5 text-sm">
-              {CATEGORY_LINKS.map((link) => (
-                <li key={link.label}>
-                  <button
-                    onClick={() => onApplyFilters(link.filters)}
+              {CATEGORY_LINKS.map((category) => (
+                <li key={category.slug}>
+                  <a
+                    href={categoryUrl(category)}
+                    onClick={goToCategory(category.slug)}
                     className="text-left transition-colors hover:text-accent-400"
                   >
-                    {link.label}
-                  </button>
+                    {category.heading}
+                  </a>
                 </li>
               ))}
             </ul>
@@ -71,14 +89,15 @@ export function Footer({ onNavigate, onApplyFilters }: FooterProps) {
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider text-white">Marki</h4>
             <ul className="mt-4 space-y-2.5 text-sm">
-              {BRAND_LINKS.map((brand) => (
-                <li key={brand}>
-                  <button
-                    onClick={() => onApplyFilters({ brand })}
+              {BRAND_LINKS.map((category) => (
+                <li key={category.slug}>
+                  <a
+                    href={categoryUrl(category)}
+                    onClick={goToCategory(category.slug)}
                     className="text-left transition-colors hover:text-accent-400"
                   >
-                    Cesja leasingu {brand}
-                  </button>
+                    {category.heading}
+                  </a>
                 </li>
               ))}
             </ul>

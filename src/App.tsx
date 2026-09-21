@@ -1,10 +1,17 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { HomePage } from './components/HomePage';
 import { ListingDetailPage } from './components/ListingDetailPage';
 import { Footer } from './components/Footer';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Listing } from './lib/supabase';
+import {
+  CATEGORY_PATH_PREFIX,
+  SeoCategory,
+  categoryToFilters,
+  findCategory,
+  parseCategorySlug,
+} from './data/seoCategories';
 
 // Only the homepage and listing pages need to be in the critical bundle -
 // they're the pages Google indexes. Everything else (auth-gated tools,
@@ -30,6 +37,22 @@ function PageLoader() {
 
 type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics' | 'regulamin' | 'polityka-prywatnosci';
 
+/** Ścieżki bez parametrów — jedna tablica zamiast dwóch drabinek `else if`. */
+const STATIC_ROUTES: Record<string, Page> = {
+  '/add': 'add-listing',
+  '/profile': 'profile',
+  '/admin-scraping': 'admin-scraping',
+  '/bulk-import': 'bulk-import',
+  '/facebook-import': 'bookmarklet',
+  '/analytics': 'analytics',
+  '/regulamin': 'regulamin',
+  '/polityka-prywatnosci': 'polityka-prywatnosci',
+};
+
+const PAGE_PATHS: Partial<Record<Page, string>> = Object.fromEntries(
+  Object.entries(STATIC_ROUTES).map(([path, page]) => [page, path]),
+);
+
 // Legacy/CDN-cached crawler redirects may still point at the hash form
 // (#/listing/{id}) instead of the real path. Accept both so no visitor
 // coming from an old cached link ends up stranded on the homepage.
@@ -50,90 +73,39 @@ function App() {
   // HomePage seeds its filter state once, on mount. Bumping this key remounts
   // it so footer category links work while the homepage is already open.
   const [homeFiltersKey, setHomeFiltersKey] = useState(0);
+  // Strona kategorii (/cesja-leasingu/<slug>) to ta sama HomePage z nałożonym
+  // filtrem i własnym H1 — dzięki temu crawler i użytkownik widzą tę samą listę.
+  const [category, setCategory] = useState<SeoCategory | null>(null);
 
-  useEffect(() => {
-    const path = window.location.pathname;
-    const hash = window.location.hash;
+  const applyRoute = useCallback((path: string, hash: string) => {
+    const listingId = parseListingId(path, hash);
+    const nextCategory = findCategory(parseCategorySlug(path));
+
+    setSelectedListingId(listingId);
+    setCategory(nextCategory);
 
     if (path === '/reset-password' || (hash && hash.includes('type=recovery'))) {
       setCurrentPage('reset-password');
-    } else if (parseListingId(path, hash)) {
-      const id = parseListingId(path, hash);
-      if (id) {
-        setSelectedListingId(id);
-        setCurrentPage('listing-detail');
-      }
-    } else if (path === '/add') {
-      setCurrentPage('add-listing');
-    } else if (path === '/profile') {
-      setCurrentPage('profile');
-    } else if (path === '/admin-scraping') {
-      setCurrentPage('admin-scraping');
-    } else if (path === '/bulk-import') {
-      setCurrentPage('bulk-import');
-    } else if (path === '/facebook-import') {
-      setCurrentPage('bookmarklet');
-    } else if (path === '/analytics') {
-      setCurrentPage('analytics');
-    } else if (path === '/regulamin') {
-      setCurrentPage('regulamin');
-    } else if (path === '/polityka-prywatnosci') {
-      setCurrentPage('polityka-prywatnosci');
+    } else if (listingId) {
+      setCurrentPage('listing-detail');
     } else {
-      setCurrentPage('home');
+      setCurrentPage(STATIC_ROUTES[path] ?? 'home');
     }
+  }, []);
 
-    const handlePopState = () => {
-      const newPath = window.location.pathname;
-      const newHash = window.location.hash;
-      if (newPath === '/reset-password' || (newHash && newHash.includes('type=recovery'))) {
-        setCurrentPage('reset-password');
-      } else if (parseListingId(newPath, newHash)) {
-        const id = parseListingId(newPath, newHash);
-        if (id) {
-          setSelectedListingId(id);
-          setCurrentPage('listing-detail');
-        }
-      } else if (newPath === '/add') {
-        setCurrentPage('add-listing');
-      } else if (newPath === '/profile') {
-        setCurrentPage('profile');
-      } else if (newPath === '/admin-scraping') {
-        setCurrentPage('admin-scraping');
-      } else if (newPath === '/bulk-import') {
-        setCurrentPage('bulk-import');
-      } else if (newPath === '/facebook-import') {
-        setCurrentPage('bookmarklet');
-      } else if (newPath === '/analytics') {
-        setCurrentPage('analytics');
-      } else if (newPath === '/regulamin') {
-        setCurrentPage('regulamin');
-      } else if (newPath === '/polityka-prywatnosci') {
-        setCurrentPage('polityka-prywatnosci');
-      } else {
-        setCurrentPage('home');
-        setSelectedListingId(null);
-      }
-    };
+  useEffect(() => {
+    applyRoute(window.location.pathname, window.location.hash);
 
+    const handlePopState = () => applyRoute(window.location.pathname, window.location.hash);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [applyRoute]);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as Page);
+    setCategory(null);
 
-    let url = '/';
-    if (page === 'add-listing') url = '/add';
-    else if (page === 'profile') url = '/profile';
-    else if (page === 'admin-scraping') url = '/admin-scraping';
-    else if (page === 'bulk-import') url = '/bulk-import';
-    else if (page === 'bookmarklet') url = '/facebook-import';
-    else if (page === 'analytics') url = '/analytics';
-    else if (page === 'regulamin') url = '/regulamin';
-    else if (page === 'polityka-prywatnosci') url = '/polityka-prywatnosci';
-
-    window.history.pushState({}, '', url);
+    window.history.pushState({}, '', PAGE_PATHS[page as Page] ?? '/');
 
     if (page !== 'listing-detail') {
       setSelectedListingId(null);
@@ -141,6 +113,18 @@ function App() {
     if (page !== 'add-listing') {
       setEditingListing(null);
     }
+    window.scrollTo({ top: 0 });
+  };
+
+  const handleNavigateCategory = (slug: string) => {
+    const next = findCategory(slug);
+    if (!next) return;
+
+    setCategory(next);
+    setPendingHomeFilters(undefined);
+    setCurrentPage('home');
+    setSelectedListingId(null);
+    window.history.pushState({}, '', `${CATEGORY_PATH_PREFIX}${slug}`);
     window.scrollTo({ top: 0 });
   };
 
@@ -165,6 +149,7 @@ function App() {
   const handleApplySavedSearch = (filters: Record<string, string>) => {
     setPendingHomeFilters(filters);
     setHomeFiltersKey((key) => key + 1);
+    setCategory(null);
     setCurrentPage('home');
     window.history.pushState({}, '', '/');
     window.scrollTo({ top: 0 });
@@ -175,11 +160,15 @@ function App() {
       <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
 
       {currentPage === 'home' && (
+        // Slug wchodzi w klucz, żeby przejście między kategoriami przeładowało
+        // filtry — HomePage czyta `initialFilters` tylko przy montowaniu.
         <HomePage
-          key={homeFiltersKey}
+          key={`${homeFiltersKey}-${category?.slug ?? ''}`}
           onViewListing={handleViewListing}
-          initialFilters={pendingHomeFilters}
+          initialFilters={category ? categoryToFilters(category) : pendingHomeFilters}
+          category={category}
           onNavigate={handleNavigate}
+          onNavigateCategory={handleNavigateCategory}
         />
       )}
 
@@ -220,7 +209,7 @@ function App() {
         {currentPage === 'polityka-prywatnosci' && <PolitykaPrywatnosciPage />}
       </Suspense>
 
-      <Footer onNavigate={handleNavigate} onApplyFilters={handleApplySavedSearch} />
+      <Footer onNavigate={handleNavigate} onNavigateCategory={handleNavigateCategory} />
       <CookieConsentBanner />
     </div>
   );

@@ -42,6 +42,49 @@ Rozwiązanie:
   na stronie głównej zamiast na ogłoszeniu.
 - Usunięto martwy plik `public/listing.html` (nieużywany, zastąpiony przez powyższy mechanizm).
 
+### 3c. Statyczny render strony głównej i kategorii (funkcja `seo-page`)
+`og-meta` załatwiał wyłącznie `/listing/:id`. Strona główna nadal wysyłała botom sam szkielet — 4 kB
+z `<title>` i JSON-LD, bez jednego zdania treści (sprawdzone `curl`-em jako GPTBot i jako przeglądarka:
+identyczny plik). Cała sekcja „Treści SEO" niżej opisywała tekst, którego crawler bez JS nigdy nie widział.
+
+Funkcja `seo-page` renderuje statycznie dwa pozostałe typy stron:
+- `/` — H1, lead, statystyki, najnowsze oferty, indeks kategorii, „Czym jest cesja", kroki, FAQ
+- `/cesja-leasingu/<slug>` — H1 kategorii, lead, statystyki, lista ofert, linki do pozostałych kategorii
+
+Reguły `has` w `vercel.json` kierują tam wyłącznie crawlery; człowiek dostaje `index.html` i SPA.
+To dynamic rendering, nie cloaking — obie wersje pokazują te same oferty i ten sam tekst, bo treść
+redakcyjna (`_shared/seoContent.ts`) i katalog kategorii (`_shared/seoCategories.ts`) są wspólne
+dla funkcji brzegowej i aplikacji React (ta importuje je przez re-eksport w `src/data/`).
+
+Jedyny fragment logiki świadomie zduplikowany to wzór na realny koszt miesięczny — `effectiveMonthly`
+w `seo-page` musi zostać zgodny z `listingCosts()` z `src/utils/listingMetrics.ts`.
+
+### 3d. Strony kategorii `/cesja-leasingu/<slug>`
+Katalog liczy 40 kategorii w trzech grupach: marki (`bmw`, `audi`, …), typy pojazdu
+(`samochody`, `motocykle`, `lodzie`) i cechy oferty (`bez-odstepnego`, `rata-do-1000-zl`,
+`rata-do-2000-zl`, `krotkie-umowy`, `konczace-sie-umowy`).
+
+Do sitemapy i linkowania wewnętrznego trafiają tylko kategorie, które spełniają dwa warunki
+(`indexableCategories` w `_shared/seoCategories.ts`):
+1. mają co najmniej `MIN_LISTINGS_TO_INDEX` (3) ogłoszenia — pusta kategoria to dla Google thin content;
+2. nie obejmują całej bazy — kategoria równa całości jest kopią strony głównej pod innym adresem
+   (dziś dotyczy to `samochody`, bo nie ma ani jednego motocykla).
+
+Pozostałe kategorie istnieją pod swoim adresem, ale z `noindex, follow`. Lista indeksowanych rośnie
+sama, w miarę jak przybywa ogłoszeń — nie trzeba niczego przestawiać ręcznie.
+
+Nieznany slug zwraca botowi twarde **404**, a użytkownikowi stronę główną z `canonical` na `/`.
+
+Stan na dzień wdrożenia (38 opublikowanych ogłoszeń): 7 kategorii w sitemapie —
+`bez-odstepnego` (8), `rata-do-2000-zl` (13), `krotkie-umowy` (8), `bmw` (10), `audi` (3),
+`mercedes-benz` (6), `skoda` (4). Sitemapa urosła z 38 do 48 adresów.
+
+### 3e. Linkowanie wewnętrzne
+Kategorie w stopce i kafelki marek w „Popularnych wyszukiwaniach" były wcześniej `<button>`
+nakładającymi filtry — dla crawlera nie istniały, bo bot nie klika w przyciski. Teraz to prawdziwe
+`<a href="/cesja-leasingu/...">` z obsługą nawigacji po stronie klienta w `onClick`.
+To jedyna ścieżka, którą bot dociera ze strony głównej na kategorie.
+
 ### 4. Treści SEO
 - ✅ Sekcja H1 z frazami kluczowymi na stronie głównej
 - ✅ Naturalne użycie fraz: "cesja leasingu", "przejęcie umowy leasingowej", "odstąpienie leasingu"
@@ -80,7 +123,7 @@ Rozwiązanie:
 
 ### 1. Google Search Console
 Po wdrożeniu strony na produkcję, zarejestruj ją w Google Search Console:
-- Prześlij sitemap: https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/sitemap
+- Prześlij sitemap: https://cesly.pl/sitemap.xml
 - Monitoruj indeksację
 - Sprawdzaj wydajność wyszukiwania
 - Analizuj kliknięcia i pozycje
@@ -183,3 +226,36 @@ Strona jest już zoptymalizowana pod crawlery AI:
 - Schema.org documentation
 - Google Search Central Blog
 - Moz Beginner's Guide to SEO
+
+
+## Wdrożenie zmian SEO
+
+Funkcje brzegowe idą osobno od frontu — push do repo ich nie aktualizuje:
+
+```bash
+npx supabase functions deploy seo-page --no-verify-jwt
+npx supabase functions deploy sitemap --no-verify-jwt
+```
+
+`--no-verify-jwt` jest konieczne, bo rewrite z Vercela nie dokłada nagłówka `Authorization`
+(tak samo działa istniejąca funkcja `og-meta`).
+
+Front i `vercel.json` wdrażają się zwykłym pushem.
+
+### Weryfikacja po wdrożeniu
+
+```bash
+curl -s https://cesly.pl/ -A "GPTBot/1.0" | wc -c
+curl -s https://cesly.pl/cesja-leasingu/bmw -A "Googlebot/2.1" | grep -o "<h1>.*</h1>"
+curl -s https://cesly.pl/cesja-leasingu/nie-ma -A "Googlebot/2.1" -o /dev/null -w "%{http_code}\n"
+curl -s https://cesly.pl/sitemap.xml | grep -c "cesja-leasingu"
+```
+
+Oczekiwane: strona główna dla bota waży kilkadziesiąt kB zamiast 4 kB, kategoria zwraca swój H1,
+nieznany slug zwraca 404, sitemapa zawiera adresy kategorii. W przeglądarce wszystkie cztery adresy
+muszą nadal ładować normalną aplikację React.
+
+### Po wdrożeniu — Search Console
+Zgłoś ręcznie do indeksacji stronę główną i 2–3 największe kategorie; reszta wejdzie z sitemapy.
+Warto obserwować raport „Strony" pod kątem statusu „Strona z przekierowaniem" i „Zduplikowana" —
+gdyby kategorie zaczęły tam wpadać, znaczy to, że próg `MIN_LISTINGS_TO_INDEX` jest za niski.

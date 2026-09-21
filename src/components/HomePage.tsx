@@ -22,13 +22,26 @@ import { listingCosts } from '../utils/listingMetrics';
 import { trackPageView } from '../utils/analytics';
 import { useAuth } from '../contexts/AuthContext';
 import { EMPTY_FILTERS, Filters, countActiveFilters } from '../types/filters';
+import { SeoCategory, SEO_CATEGORIES, categoryUrl } from '../data/seoCategories';
+import {
+  FAQ_ITEMS,
+  HOME_HEADING_LINES,
+  HOME_LEAD,
+  HOW_IT_WORKS_STEPS,
+  TAKEOVER_BENEFITS,
+  WHAT_IS_CESJA_BODY,
+  WHAT_IS_CESJA_HEADING,
+} from '../data/seoContent';
 
 export type { Filters } from '../types/filters';
 
 type HomePageProps = {
   onViewListing: (id: string) => void;
   onNavigate: (page: string) => void;
+  onNavigateCategory: (slug: string) => void;
   initialFilters?: Partial<Filters>;
+  /** Ustawione na `/cesja-leasingu/<slug>` — zmienia H1, meta i canonical. */
+  category?: SeoCategory | null;
 };
 
 // Multiple of 12 (LCM of the grid's 2/3/4 responsive column counts) so the
@@ -42,50 +55,13 @@ const ITEMS_PER_PAGE = 24;
 const COMPUTED_SORTS = new Set(['effective_asc', 'total_asc', 'deal']);
 const MAX_CLIENT_SORT_ROWS = 1000;
 
-const POPULAR_BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Volkswagen', 'Škoda', 'Toyota', 'Kia', 'Volvo'];
+// Te same marki co wcześniej, ale jako kategorie — każdy kafelek jest teraz
+// linkiem pod własny adres, a nie przyciskiem nakładającym filtr.
+const POPULAR_BRAND_SLUGS = ['bmw', 'audi', 'mercedes-benz', 'volkswagen', 'skoda', 'toyota', 'kia', 'volvo'];
 
-const HOW_IT_WORKS_STEPS: { title: string; description: string }[] = [
-  {
-    title: 'Znajdź ofertę',
-    description: 'Filtruj po racie, odstępnym i liczbie pozostałych rat — a jeśli chcesz oddać leasing, dodaj ogłoszenie za darmo',
-  },
-  { title: 'Skontaktuj się', description: 'Napisz do właściciela przez wiadomości w serwisie albo zadzwoń' },
-  { title: 'Uzgodnij warunki', description: 'Z obecnym leasingobiorcą i leasingodawcą — odstępne, termin, dokumenty' },
-  { title: 'Podpisz cesję', description: 'Leasingodawca zatwierdza, umowa i pojazd przechodzą na Ciebie' },
-];
-
-const FAQ_ITEMS = [
-  {
-    question: 'Czym jest cesja leasingu?',
-    answer:
-      'Cesja leasingu (przejęcie umowy leasingowej) to przeniesienie praw i obowiązków z dotychczasowego leasingobiorcy (cedenta) na nowego użytkownika (cesjonariusza). Nowa osoba przejmuje pozostałe raty leasingowe oraz prawo do korzystania z pojazdu, a leasingodawca musi wyrazić zgodę na taką zmianę.',
-  },
-  {
-    question: 'Ile kosztuje cesja leasingu?',
-    answer:
-      'Na koszt cesji składają się dwa elementy: odstępne płacone dotychczasowemu leasingobiorcy (ustalane indywidualnie między stronami, widoczne w każdym ogłoszeniu) oraz opłata manipulacyjna pobierana przez leasingodawcę za przepisanie umowy, zwykle w wysokości kilkuset złotych.',
-  },
-  {
-    question: 'Co oznacza „realny koszt miesięczny” w ogłoszeniach?',
-    answer:
-      'To rata leasingowa powiększona o odstępne rozłożone na pozostałe raty. Dzięki temu można uczciwie porównać ofertę z niską ratą i wysokim odstępnym z ofertą, w której odstępnego nie ma wcale. Sama rata bywa myląca — auto za 800 zł miesięcznie z odstępnym 30 000 zł i 20 ratami do końca kosztuje realnie 2 300 zł na miesiąc.',
-  },
-  {
-    question: 'Czy cesja leasingu wymaga zgody leasingodawcy?',
-    answer:
-      'Tak. Firma leasingowa musi zweryfikować nowego leasingobiorcę (m.in. jego zdolność finansową) i formalnie wyrazić zgodę na przeniesienie umowy, zanim cesja zostanie sfinalizowana.',
-  },
-  {
-    question: 'Jakie dokumenty są potrzebne do przejęcia leasingu?',
-    answer:
-      'Zazwyczaj wymagany jest wniosek o cesję złożony do leasingodawcy, dokumenty potwierdzające sytuację finansową nowego leasingobiorcy (np. dla firm: dokumenty rejestrowe i finansowe), a po akceptacji — aneks do umowy leasingowej podpisywany przez wszystkie trzy strony.',
-  },
-  {
-    question: 'Czy przejęcie leasingu to dobry sposób na tańszy samochód?',
-    answer:
-      'Często tak — przejmując leasing, płacisz tylko pozostałe raty i odstępne, a nie pełną wartość pojazdu, co przy dobrze dobranej ofercie bywa tańsze niż zakup podobnego auta na rynku wtórnym lub zawarcie nowej umowy leasingowej.',
-  },
-];
+const POPULAR_BRANDS = POPULAR_BRAND_SLUGS
+  .map((slug) => SEO_CATEGORIES.find((category) => category.slug === slug))
+  .filter((category): category is SeoCategory => category !== undefined);
 
 function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -154,7 +130,13 @@ function daysAgoIso(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString();
 }
 
-export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePageProps) {
+export function HomePage({
+  onViewListing,
+  onNavigate,
+  onNavigateCategory,
+  initialFilters,
+  category = null,
+}: HomePageProps) {
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [rows, setRows] = useState<Listing[]>([]);
@@ -180,15 +162,27 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
   const queryFilters = useMemo<Filters>(() => ({ ...filters, q: debouncedQuery }), [filters, debouncedQuery]);
 
   useEffect(() => {
-    document.title = 'Cesly.pl – Cesja leasingu i przejęcie umowy leasingowej';
+    document.title = category
+      ? `${category.heading} | Cesly.pl`
+      : 'Cesly.pl – Cesja leasingu i przejęcie umowy leasingowej';
+
     document
       .querySelector('meta[name="description"]')
       ?.setAttribute(
         'content',
-        'Znajdź oferty cesji i przejęcia leasingu samochodów w całej Polsce. Filtruj po racie, odstępnym i liczbie rat. Dodaj własne ogłoszenie za darmo.',
+        category
+          ? category.lead
+          : 'Znajdź oferty cesji i przejęcia leasingu samochodów w całej Polsce. Filtruj po racie, odstępnym i liczbie rat. Dodaj własne ogłoszenie za darmo.',
       );
-    trackPageView('home');
-  }, []);
+
+    // Bez tego wszystkie strony kategorii deklarowałyby canonical strony
+    // głównej — czyli prosiłyby Google, żeby ich nie indeksował.
+    document
+      .querySelector('link[rel="canonical"]')
+      ?.setAttribute('href', `https://cesly.pl${category ? categoryUrl(category) : '/'}`);
+
+    trackPageView(category ? `category:${category.slug}` : 'home');
+  }, [category]);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -462,6 +456,8 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
         onSubmit={scrollToResults}
         onAddListing={() => (user ? onNavigate('add-listing') : setShowAuthModal(true))}
         stats={stats}
+        heading={category ? category.heading : HOME_HEADING_LINES}
+        lead={category ? category.lead : HOME_LEAD}
       />
 
       <FilterBar
@@ -501,7 +497,11 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-900">
-              {activeFilterCount > 0 ? 'Wyniki wyszukiwania' : 'Aktualne oferty przejęcia leasingu'}
+              {category
+                ? `Oferty w kategorii: ${category.label}`
+                : activeFilterCount > 0
+                  ? 'Wyniki wyszukiwania'
+                  : 'Aktualne oferty przejęcia leasingu'}
             </h2>
             {!loading && totalItems > 0 && (
               <p className="mt-1 text-sm text-ink-500">
@@ -638,24 +638,15 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
       <div className="mx-auto max-w-7xl space-y-12 px-4 py-14 sm:px-6 lg:px-8">
         <section className="grid gap-8 rounded-3xl border border-ink-100 bg-white p-6 md:p-10 lg:grid-cols-[1.3fr_1fr]">
           <div>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-900">Czym jest cesja leasingu?</h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-600 md:text-base">
-              Cesja leasingu, nazywana też przejęciem umowy leasingowej lub odstąpieniem leasingu, polega na
-              przeniesieniu praw i obowiązków z obecnego leasingobiorcy na nowego użytkownika. Cedent (osoba
-              oddająca leasing) kończy spłacanie rat, a cesjonariusz (osoba przejmująca) wchodzi w jego miejsce —
-              przejmuje pozostałe raty leasingowe oraz pojazd, płacąc cedentowi ustalone odstępne. Cała
-              transakcja wymaga zgody leasingodawcy.
-            </p>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-900">
+              {WHAT_IS_CESJA_HEADING}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-ink-600 md:text-base">{WHAT_IS_CESJA_BODY}</p>
           </div>
           <div className="rounded-2xl bg-ink-50 p-5">
             <h3 className="font-semibold text-ink-900">Korzyści z przejęcia leasingu</h3>
             <ul className="mt-3 space-y-2.5 text-sm text-ink-600">
-              {[
-                'Krótszy okres zobowiązania niż przy nowej umowie leasingowej',
-                'Możliwość przejęcia pojazdu poniżej jego wartości rynkowej',
-                'Uproszczona procedura w porównaniu z zakupem i nowym leasingiem',
-                'Znana historia serwisowa i przebieg pojazdu od dotychczasowego użytkownika',
-              ].map((benefit) => (
+              {TAKEOVER_BENEFITS.map((benefit) => (
                 <li key={benefit} className="flex items-start gap-2.5">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                   <span>{benefit}</span>
@@ -670,17 +661,18 @@ export function HomePage({ onViewListing, onNavigate, initialFilters }: HomePage
             Popularne wyszukiwania
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            {POPULAR_BRANDS.map((brand) => (
-              <button
-                key={brand}
-                onClick={() => {
-                  handleChange({ brand, model: '' });
-                  scrollToResults();
+            {POPULAR_BRANDS.map((brandCategory) => (
+              <a
+                key={brandCategory.slug}
+                href={categoryUrl(brandCategory)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigateCategory(brandCategory.slug);
                 }}
                 className="chip py-2"
               >
-                Cesja leasingu {brand}
-              </button>
+                {brandCategory.heading}
+              </a>
             ))}
           </div>
         </section>

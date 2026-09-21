@@ -81,6 +81,9 @@ export default function AdminScrapingPage() {
   // wśród rzeczy już przejrzanych. Domyślnie pokazujemy tylko to, co czeka
   // na decyzję.
   const [statusFilter, setStatusFilter] = useState<'todo' | 'published' | 'rejected' | 'all'>('todo');
+  const [rowNotice, setRowNotice] = useState<Record<string, string>>({});
+  const [busyRows, setBusyRows] = useState<Record<string, boolean>>({});
+  const [scrapeSummary, setScrapeSummary] = useState<string | null>(null);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -108,6 +111,30 @@ export default function AdminScrapingPage() {
     if (statusFilter === 'todo') return listing.status === 'pending' || listing.status === 'approved';
     return listing.status === statusFilter;
   });
+
+  /**
+   * Każda akcja zmienia listę NA MIEJSCU. Wcześniej po zatwierdzeniu czy
+   * usunięciu wołaliśmy loadData(), co przeładowywało całą kolejkę, gubiło
+   * wpisane w formularzach liczby i rzucało stronę na początek — przy
+   * przerabianiu kilkunastu ogłoszeń pod rząd to była główna uciążliwość.
+   */
+  function patchListing(id: string, patch: Partial<ScrapedListing>) {
+    setScrapedListings((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  }
+
+  function dropListing(id: string) {
+    setScrapedListings((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  /** Krótki komunikat przy wierszu — zamiast okienka alert(). */
+  function flash(id: string, message: string) {
+    setRowNotice((prev) => ({ ...prev, [id]: message }));
+    setTimeout(() => setRowNotice((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    }), 4000);
+  }
 
   async function loadData() {
     setLoading(true);
@@ -155,11 +182,11 @@ export default function AdminScrapingPage() {
               : `${entry.source}: kandydatów ${entry.candidates}, znanych ${entry.alreadyKnown}, pobrano ${entry.fetched}, dodano ${entry.inserted} (w tym kompletnych ${entry.complete})`,
         )
         .join('\n');
-      alert(`Import zakończony. Dodano ${result.processed} ogłoszeń.\n\n${perSource}`);
+      setScrapeSummary(`Import: dodano ${result.processed}. ${perSource}`);
       loadData();
     } catch (error) {
       console.error('Error running scraper:', error);
-      alert('Error running scraper');
+      setScrapeSummary('Nie udało się uruchomić importu.');
     } finally {
       setScraping(false);
     }
@@ -191,7 +218,7 @@ export default function AdminScrapingPage() {
 
   async function addSource() {
     if (!newSource.name || !newSource.url) {
-      alert('Please fill in all fields');
+      setScrapeSummary('Uzupełnij wszystkie pola źródła.');
       return;
     }
 
@@ -201,7 +228,7 @@ export default function AdminScrapingPage() {
 
     if (error) {
       console.error('Error adding source:', error);
-      alert('Error adding source');
+      setScrapeSummary('Nie udało się dodać źródła.');
     } else {
       setNewSource({ name: '', type: 'rss', url: '' });
       setShowAddSource(false);
@@ -230,12 +257,13 @@ export default function AdminScrapingPage() {
   }
 
   async function updateListingStatus(id: string, status: 'approved' | 'rejected') {
+    const previous = scrapedListings.find((l) => l.id === id)?.status;
+    patchListing(id, { status });
     await supabase
       .from('scraped_listings')
       .update({ status, processed_at: new Date().toISOString() })
       .eq('id', id);
-
-    loadData();
+    return previous;
   }
 
   function setDraft(id: string, patch: Partial<EconomicsDraft>, seed: ScrapedListing) {
@@ -274,9 +302,7 @@ export default function AdminScrapingPage() {
     if (raw.year == null) missing.push('rocznik');
 
     if (missing.length > 0) {
-      if (!quiet) {
-        alert(`Nie mogę opublikować — brakuje: ${missing.join(', ')}.\nUzupełnij pola przy ogłoszeniu i spróbuj ponownie.`);
-      }
+      if (!quiet) flash(listing.id, `Brakuje: ${missing.join(', ')}`);
       return false;
     }
 
@@ -329,7 +355,7 @@ export default function AdminScrapingPage() {
 
     if (error || !newListing) {
       console.error('Publikacja nieudana:', error);
-      if (!quiet) alert(`Publikacja nieudana: ${error?.message ?? 'nieznany błąd'}`);
+      if (!quiet) flash(listing.id, `Nie udało się: ${error?.message ?? 'nieznany błąd'}`);
       return false;
     }
 
@@ -342,10 +368,7 @@ export default function AdminScrapingPage() {
       })
       .eq('id', listing.id);
 
-    if (!quiet) {
-      alert('Ogłoszenie opublikowane.');
-      loadData();
-    }
+    patchListing(listing.id, { status: 'published', listing_id: newListing.id });
     return true;
   }
 
@@ -358,7 +381,6 @@ export default function AdminScrapingPage() {
       (listing) => listing.status === 'pending' || listing.status === 'approved',
     );
     if (candidates.length === 0) return;
-    if (!window.confirm(`Opublikować wszystkie kompletne spośród ${candidates.length} ogłoszeń w kolejce?`)) return;
 
     setPublishingAll(true);
     let published = 0;
@@ -369,10 +391,9 @@ export default function AdminScrapingPage() {
         if (ok) published++;
         else skipped++;
       }
-      alert(`Opublikowano ${published}. Pominięto ${skipped} z powodu braku danych.`);
+      setScrapeSummary(`Opublikowano ${published}, pominięto ${skipped} z powodu braku danych.`);
     } finally {
       setPublishingAll(false);
-      loadData();
     }
   }
 
@@ -385,10 +406,9 @@ export default function AdminScrapingPage() {
   async function rebuildDescriptions() {
     const published = scrapedListings.filter((l) => l.status === 'published' && l.listing_id);
     if (published.length === 0) {
-      alert('Brak opublikowanych ogłoszeń z tej kolejki.');
+      setScrapeSummary('Brak opublikowanych ogłoszeń z tej kolejki.');
       return;
     }
-    if (!window.confirm(`Przebudować opisy ${published.length} opublikowanych ogłoszeń na wersję z faktów?`)) return;
 
     let updated = 0;
     for (const listing of published) {
@@ -414,36 +434,53 @@ export default function AdminScrapingPage() {
         .eq('id', listing.listing_id!);
       if (!error) updated++;
     }
-    alert(`Przebudowano opisy: ${updated} z ${published.length}.`);
-    loadData();
+    setScrapeSummary(`Przebudowano opisy: ${updated} z ${published.length}.`);
   }
 
   /** Zdejmuje opublikowane ogłoszenie ze strony; wpis zostaje jako odrzucony,
    *  żeby kolejny import go nie przywrócił. */
+  /**
+   * Zdejmuje ogłoszenie ze strony. Bez pytania o potwierdzenie, bo operacja
+   * jest odwracalna: wpis zostaje w kolejce ze wszystkimi danymi i wystarczy
+   * jedno kliknięcie „Publikuj", żeby wrócił na stronę.
+   */
   async function unpublishListing(listing: ScrapedListing) {
-    if (!window.confirm(`Usunąć ze strony „${listing.raw_data.title}"? Ogłoszenie zniknie z serwisu.`)) return;
+    setBusyRows((prev) => ({ ...prev, [listing.id]: true }));
+    patchListing(listing.id, { status: 'rejected', listing_id: null });
 
-    if (listing.listing_id) {
-      const { error } = await supabase.from('listings').delete().eq('id', listing.listing_id);
-      if (error) {
-        alert(`Nie udało się usunąć ogłoszenia: ${error.message}`);
-        return;
+    try {
+      if (listing.listing_id) {
+        const { error } = await supabase.from('listings').delete().eq('id', listing.listing_id);
+        if (error) {
+          patchListing(listing.id, { status: 'published', listing_id: listing.listing_id });
+          flash(listing.id, `Nie udało się usunąć: ${error.message}`);
+          return;
+        }
       }
+      await supabase
+        .from('scraped_listings')
+        .update({ status: 'rejected', listing_id: null, processed_at: new Date().toISOString() })
+        .eq('id', listing.id);
+    } finally {
+      setBusyRows((prev) => ({ ...prev, [listing.id]: false }));
     }
-    await supabase
-      .from('scraped_listings')
-      .update({ status: 'rejected', listing_id: null, processed_at: new Date().toISOString() })
-      .eq('id', listing.id);
-
-    loadData();
   }
 
   /** Kasuje wpis z kolejki na dobre. Uwaga: bez niego kolejny import może
    *  pobrać to ogłoszenie ponownie — odsiewanie działa po `external_id`. */
+  /**
+   * Kasuje wpis z kolejki. Też bez potwierdzenia — ogłoszenie wróci przy
+   * kolejnym imporcie, bo odsiewanie działa po tym, co jest w kolejce.
+   * Jeśli ma NIE wracać, właściwą akcją jest odrzucenie, nie skasowanie.
+   */
   async function deleteQueueEntry(listing: ScrapedListing) {
-    if (!window.confirm('Usunąć wpis z kolejki na stałe? Kolejny import może pobrać to ogłoszenie ponownie.')) return;
-    await supabase.from('scraped_listings').delete().eq('id', listing.id);
-    loadData();
+    const snapshot = listing;
+    dropListing(listing.id);
+    const { error } = await supabase.from('scraped_listings').delete().eq('id', listing.id);
+    if (error) {
+      setScrapedListings((prev) => [snapshot, ...prev]);
+      setScrapeSummary(`Nie udało się usunąć wpisu: ${error.message}`);
+    }
   }
 
   if (loading) {
@@ -605,6 +642,15 @@ export default function AdminScrapingPage() {
           </button>
         </div>
 
+        {scrapeSummary && (
+          <div className="mb-4 flex items-start justify-between gap-3 rounded-lg bg-gray-900 px-4 py-3 text-sm text-white">
+            <span>{scrapeSummary}</span>
+            <button onClick={() => setScrapeSummary(null)} className="shrink-0 text-gray-400 hover:text-white">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div className="mb-5 flex flex-wrap gap-2">
           {([
             ['todo', `Do decyzji (${counts.todo})`],
@@ -632,7 +678,13 @@ export default function AdminScrapingPage() {
 
         <div className="space-y-4">
           {visibleListings.map((listing) => (
-            <div key={listing.id} className="border rounded-lg p-4">
+            <div
+              key={listing.id}
+              className={`rounded-lg border p-4 transition-opacity ${busyRows[listing.id] ? 'opacity-50' : ''}`}
+            >
+              {rowNotice[listing.id] && (
+                <p className="mb-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">{rowNotice[listing.id]}</p>
+              )}
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -741,10 +793,13 @@ export default function AdminScrapingPage() {
                   </div>
                 )}
 
-                {listing.status === 'approved' && (
+                {/* Publikowanie dostępne też dla oczekujących — osobne
+                    „zatwierdź, potem publikuj" to były dwa kliknięcia na to samo. */}
+                {(listing.status === 'approved' || listing.status === 'pending') && (
                   <button
                     onClick={() => publishListing(listing)}
-                    className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={busyRows[listing.id]}
+                    className="ml-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
                   >
                     Publikuj
                   </button>

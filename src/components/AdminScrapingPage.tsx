@@ -77,6 +77,10 @@ export default function AdminScrapingPage() {
   const [scraping, setScraping] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, EconomicsDraft>>({});
   const [publishingAll, setPublishingAll] = useState(false);
+  // Kolejka pokazywała wszystko naraz, więc po imporcie nowe zgłoszenia ginęły
+  // wśród rzeczy już przejrzanych. Domyślnie pokazujemy tylko to, co czeka
+  // na decyzję.
+  const [statusFilter, setStatusFilter] = useState<'todo' | 'published' | 'rejected' | 'all'>('todo');
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -90,6 +94,21 @@ export default function AdminScrapingPage() {
     loadData();
   }, []);
 
+  const counts = {
+    todo: scrapedListings.filter((l) => l.status === 'pending' || l.status === 'approved').length,
+    complete: scrapedListings.filter(
+      (l) => l.raw_data.is_complete && (l.status === 'pending' || l.status === 'approved'),
+    ).length,
+    published: scrapedListings.filter((l) => l.status === 'published').length,
+    rejected: scrapedListings.filter((l) => l.status === 'rejected').length,
+  };
+
+  const visibleListings = scrapedListings.filter((listing) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'todo') return listing.status === 'pending' || listing.status === 'approved';
+    return listing.status === statusFilter;
+  });
+
   async function loadData() {
     setLoading(true);
 
@@ -102,7 +121,7 @@ export default function AdminScrapingPage() {
       .from('scraped_listings')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(500);
 
     if (sourcesData) setSources(sourcesData);
     if (listingsData) setScrapedListings(listingsData);
@@ -562,12 +581,12 @@ export default function AdminScrapingPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold">
-            Kolejka importu ({scrapedListings.length})
+            Kolejka importu
             {' · '}
             <span className="text-sm font-normal text-gray-500">
-              kompletnych: {scrapedListings.filter((l) => l.raw_data.is_complete && (l.status === 'pending' || l.status === 'approved')).length}
+              do decyzji: {counts.todo} · kompletnych wśród nich: {counts.complete}
             </span>
           </h2>
           <button
@@ -586,8 +605,33 @@ export default function AdminScrapingPage() {
           </button>
         </div>
 
+        <div className="mb-5 flex flex-wrap gap-2">
+          {([
+            ['todo', `Do decyzji (${counts.todo})`],
+            ['published', `Opublikowane (${counts.published})`],
+            ['rejected', `Odrzucone (${counts.rejected})`],
+            ['all', `Wszystkie (${scrapedListings.length})`],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setStatusFilter(value)}
+              className={`rounded-full px-3 py-1 text-sm ${
+                statusFilter === value ? 'bg-gray-900 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {visibleListings.length === 0 && (
+          <p className="rounded-lg bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+            Nic tu nie ma. Uruchom import albo przełącz filtr.
+          </p>
+        )}
+
         <div className="space-y-4">
-          {scrapedListings.map((listing) => (
+          {visibleListings.map((listing) => (
             <div key={listing.id} className="border rounded-lg p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">

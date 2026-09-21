@@ -285,11 +285,16 @@ Deno.serve(async (req: Request) => {
 
         // 2. Odsiewamy to, co już mamy — strony ofert są drogie, nie pobieramy
         //    ich dwa razy dla tego samego ogłoszenia.
+        //
+        //    Sprawdzamy CAŁĄ kolejkę, nie tylko wpisy tego źródła. Wcześniej
+        //    zapytanie miało `.eq('source_id', ...)` i to samo ogłoszenie
+        //    znalezione z dwóch różnych zapytań (np. „cesja leasingu"
+        //    i „przejmę leasing") trafiało do kolejki dwa razy, zmuszając
+        //    do ponownej weryfikacji czegoś już przejrzanego.
         const urls = candidates.map((node) => node.url!);
         const { data: known } = await supabase
           .from('scraped_listings')
           .select('external_id')
-          .eq('source_id', source.id)
           .in('external_id', urls);
         const knownIds = new Set((known ?? []).map((row) => row.external_id));
         const fresh = candidates.filter((node) => !knownIds.has(node.url!)).slice(0, maxDetails);

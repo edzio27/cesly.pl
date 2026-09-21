@@ -135,8 +135,35 @@ const BUYOUT_PATTERNS = [
 const PAID_OF_TOTAL_PATTERN =
   /(?:sp[łl]acon\w*|op[łl]acon\w*|zap[łl]acon\w*)\s*(?:rat\w*)?\s*:?\s*(\d{1,3})\s*(?:rat\w*)?\s*(?:z|\/|na)\s*(\d{1,3})/i;
 
+/**
+ * Zapis etykietowy: „Liczba pozostałych rat 24", „Pozostałych rat: 24".
+ * Odwrotna kolejność niż w zdaniu — najpierw rzeczownik, potem liczba —
+ * przez co wszystkie wzorce zakładające „24 raty" go nie widziały.
+ * Wymagamy członu „pozosta", bo samo „Liczba rat 48" jest dwuznaczne
+ * (bywa długością całej umowy) i wolimy null niż zgadywanie.
+ */
+/**
+ * `\w` w JavaScripcie to [A-Za-z0-9_] — polskich znaków NIE obejmuje.
+ * Przez to `pozosta\w*` nie dopasowuje „pozostało" (rozbija się na „ł"),
+ * co jest wyjątkowo złośliwe, bo wzorzec wygląda poprawnie i działa na
+ * „pozostalo" bez ogonków.
+ */
+const PL = String.raw`[\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]`;
+
+const REMAINING_LABEL_PATTERNS = [
+  new RegExp(String.raw`(?:liczba\s+)?(?:pozosta${PL}*|zosta${PL}*)\s+rat${PL}*\s*(?::|-|–|=)\s*(\d{1,3})`, 'gi'),
+  new RegExp(String.raw`(?:liczba\s+)?pozosta[łl]ych\s+rat${PL}*\s*(?::|-|–|=)?\s*(\d{1,3})`, 'gi'),
+  new RegExp(String.raw`rat${PL}*\s+pozosta[łl]${PL}*\s*(?::|-|–|=)?\s*(\d{1,3})`, 'gi'),
+  new RegExp(String.raw`rat${PL}*\s+do\s+(?:ko[ńn]ca|sp[łl]aty)\s*(?::|-|–|=)?\s*(\d{1,3})`, 'gi'),
+];
+
 const REMAINING_PATTERNS = [
-  /(?:pozosta[łl]o|zosta[łl]o|pozosta[jł]\w*|do\s+sp[łl]aty)\s*(?:jeszcze\s*)?(\d{1,3})\s*rat/gi,
+  // Między słowem otwierającym a liczbą potrafi stać jeszcze jedno lub dwa
+  // wtrącenia: „pozostało do spłaty: 48 raty", „Do spłaty zostały 53 raty".
+  new RegExp(
+    String.raw`(?:pozosta${PL}*|zosta${PL}*|do\s+sp[łl]aty)(?:\s+(?:do\s+sp[łl]aty|jeszcze|zosta${PL}*|pozosta${PL}*))?\s*(?::|-|–)?\s*(\d{1,3})\s*rat`,
+    'gi',
+  ),
   /(\d{1,3})\s*rat\w*\s*(?:do\s+ko[ńn]ca|pozosta\w*|zosta\w*)/gi,
   /do\s+ko[ńn]ca\s*(?:umowy)?\s*(?::|-|–)?\s*(\d{1,3})\s*rat/gi,
 ];
@@ -158,6 +185,24 @@ const END_DATE_PATTERNS = [
   /(?:do|koniec\s+umowy|umowa\s+do|ostatnia\s+rata|do\s+ko[ńn]ca\s+umowy)\s*(?::|-|–)?\s*(\d{1,2})[./-](\d{4})/gi,
   /(?:do|koniec\s+umowy|umowa\s+do|ostatnia\s+rata)\s*(?::|-|–)?\s*(\d{1,2})[./-](\d{2})\b/gi,
 ];
+
+/**
+ * Miesiące zapisane słownie — „umowa do października 2027". Kluczem jest
+ * rdzeń, bo w ogłoszeniach padają różne formy (październik, października).
+ */
+const MONTH_STEMS: [RegExp, number][] = [
+  [/^stycz/i, 1], [/^lut/i, 2], [/^mar(?:zec|ca)/i, 3], [/^kwiet/i, 4],
+  [/^maj/i, 5], [/^czerw/i, 6], [/^lip/i, 7], [/^sierp/i, 8],
+  [/^wrze/i, 9], [/^paździer|^pazdzier/i, 10], [/^listopad/i, 11], [/^grud/i, 12],
+];
+
+const END_DATE_WORD_PATTERN =
+  /(?:do|koniec\s+umowy|umowa\s+do|ostatnia\s+rata)\s*(?::|-|–)?\s*([a-ząćęłńóśźż]{3,12})\s+(\d{4})/gi;
+
+function monthFromWord(word: string): number | null {
+  for (const [stem, month] of MONTH_STEMS) if (stem.test(word)) return month;
+  return null;
+}
 
 /** Pełne miesiące od dziś do końca podanego miesiąca; null gdy data nie ma sensu. */
 function monthsUntil(month: number, year: number, now: Date): number | null {
@@ -192,7 +237,9 @@ export function parseCesjaEconomics(rawText: string, now: Date = new Date()): Ce
   // mogłaby przypadkiem stać obok słowa „odstępne" w dalszej części opisu.
   const noFee = /bez\s+odst[ęe]pn\w*|odst[ęe]pne\s*(?::|-|–)?\s*(?:0|brak|zero|-)\b/i.test(text);
 
-  let remaining = firstMatch(text, REMAINING_PATTERNS, isInstallments);
+  let remaining =
+    firstMatch(text, REMAINING_LABEL_PATTERNS, isInstallments) ??
+    firstMatch(text, REMAINING_PATTERNS, isInstallments);
   let total = firstMatch(text, TOTAL_PATTERNS, isInstallments);
 
   // Kolejność ma znaczenie i kosztowała błąd: zapis „Spłacone rat: 9/48"
@@ -228,6 +275,21 @@ export function parseCesjaEconomics(rawText: string, now: Date = new Date()): Ce
   // To nie jest zgadywanie — to arytmetyka na jawnie podanej dacie — ale wynik
   // oznaczamy jako wyliczony, bo bywa o miesiąc obok przy nieznanym dniu raty.
   let remainingIsDerived = false;
+  if (remaining == null) {
+    END_DATE_WORD_PATTERN.lastIndex = 0;
+    let wordMatch: RegExpExecArray | null;
+    while ((wordMatch = END_DATE_WORD_PATTERN.exec(text)) !== null) {
+      const month = monthFromWord(wordMatch[1]);
+      if (month == null) continue;
+      const derived = monthsUntil(month, Number(wordMatch[2]), now);
+      if (derived != null) {
+        remaining = derived;
+        remainingIsDerived = true;
+        break;
+      }
+    }
+  }
+
   if (remaining == null) {
     for (const pattern of END_DATE_PATTERNS) {
       pattern.lastIndex = 0;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { buildDescription } from '../data/listingText';
 import { Settings, Play, Trash2, Check, X, ExternalLink, Star } from 'lucide-react';
 
 interface ScrapingSource {
@@ -19,6 +20,7 @@ interface ScrapedListing {
   raw_data: {
     title?: string;
     description?: string;
+    source_excerpt?: string;
     external_url?: string;
     brand?: string;
     model?: string;
@@ -33,10 +35,12 @@ interface ScrapedListing {
     remainingInstallments?: number | null;
     totalInstallments?: number | null;
     buyoutPrice?: number | null;
+    priceType?: 'netto' | 'brutto' | null;
     remainingIsDerived?: boolean;
     is_complete?: boolean;
   };
   status: 'pending' | 'approved' | 'rejected' | 'published';
+  listing_id?: string | null;
   created_at: string;
 }
 
@@ -72,6 +76,7 @@ export default function AdminScrapingPage() {
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, EconomicsDraft>>({});
+  const [publishingAll, setPublishingAll] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -225,7 +230,7 @@ export default function AdminScrapingPage() {
    * dotyczące cesji. Każde kliknięcie „Publikuj" kończyło się błędem Postgresa
    * schowanym pod komunikatem „Error publishing listing".
    */
-  async function publishListing(listing: ScrapedListing) {
+  async function publishListing(listing: ScrapedListing, quiet = false): Promise<boolean> {
     const raw = listing.raw_data;
     const draft = drafts[listing.id] ?? draftFrom(listing);
 
@@ -250,19 +255,36 @@ export default function AdminScrapingPage() {
     if (raw.year == null) missing.push('rocznik');
 
     if (missing.length > 0) {
-      alert(`Nie mogę opublikować — brakuje: ${missing.join(', ')}.\nUzupełnij pola przy ogłoszeniu i spróbuj ponownie.`);
-      return;
+      if (!quiet) {
+        alert(`Nie mogę opublikować — brakuje: ${missing.join(', ')}.\nUzupełnij pola przy ogłoszeniu i spróbuj ponownie.`);
+      }
+      return false;
     }
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) return false;
 
     const { data: newListing, error } = await supabase
       .from('listings')
       .insert([{
         user_id: user.id,
         title: raw.title || `${raw.brand} ${raw.model}`.trim(),
-        description: raw.description || '',
+        // Opis składamy tu jeszcze raz, z liczb w ich ostatecznej postaci —
+        // moderator mógł je poprawić po imporcie. Nigdy nie kopiujemy opisu
+        // ze źródła: to cudzy utwór, a my publikujemy własny tekst z faktów.
+        description: buildDescription({
+          brand: raw.brand,
+          model: raw.model,
+          year: raw.year,
+          mileage: raw.mileage,
+          location: raw.location,
+          monthlyPayment,
+          transferFee,
+          remainingInstallments,
+          totalInstallments,
+          buyoutPrice: toNumber(draft.buyoutPrice),
+          remainingIsDerived: raw.remainingIsDerived,
+        }),
         vehicle_type: raw.vehicle_type || 'samochód',
         brand: raw.brand,
         model: raw.model,
@@ -274,7 +296,9 @@ export default function AdminScrapingPage() {
         total_installments: totalInstallments,
         buyout_price: toNumber(draft.buyoutPrice),
         images: raw.images ?? [],
-        price_type: 'brutto',
+        // Kwoty w ogłoszeniach bywają netto — różnica to 23%, więc sztywne
+        // 'brutto' zaniżało realny koszt o niemal jedną czwartą.
+        price_type: raw.priceType ?? 'brutto',
         status: 'published',
         // Ogłoszenie nie jest nasze — zapisujemy skąd pochodzi i że zostało
         // dodane za autora. Bez tego nie da się go potem przekazać właścicielowi.
@@ -286,8 +310,8 @@ export default function AdminScrapingPage() {
 
     if (error || !newListing) {
       console.error('Publikacja nieudana:', error);
-      alert(`Publikacja nieudana: ${error?.message ?? 'nieznany błąd'}`);
-      return;
+      if (!quiet) alert(`Publikacja nieudana: ${error?.message ?? 'nieznany błąd'}`);
+      return false;
     }
 
     await supabase
@@ -299,7 +323,107 @@ export default function AdminScrapingPage() {
       })
       .eq('id', listing.id);
 
-    alert('Ogłoszenie opublikowane.');
+    if (!quiet) {
+      alert('Ogłoszenie opublikowane.');
+      loadData();
+    }
+    return true;
+  }
+
+  /**
+   * Publikuje hurtem wszystko, co ma komplet danych. Ogłoszenia niekompletne
+   * pomija w ciszy — nie da się ich zapisać, bo kolumny są NOT NULL.
+   */
+  async function publishAllComplete() {
+    const candidates = scrapedListings.filter(
+      (listing) => listing.status === 'pending' || listing.status === 'approved',
+    );
+    if (candidates.length === 0) return;
+    if (!window.confirm(`Opublikować wszystkie kompletne spośród ${candidates.length} ogłoszeń w kolejce?`)) return;
+
+    setPublishingAll(true);
+    let published = 0;
+    let skipped = 0;
+    try {
+      for (const listing of candidates) {
+        const ok = await publishListing(listing, true);
+        if (ok) published++;
+        else skipped++;
+      }
+      alert(`Opublikowano ${published}. Pominięto ${skipped} z powodu braku danych.`);
+    } finally {
+      setPublishingAll(false);
+      loadData();
+    }
+  }
+
+  /**
+   * Podmienia opis już opublikowanego ogłoszenia na wygenerowany z faktów.
+   * Potrzebne dla ogłoszeń zaimportowanych przed tą zmianą — mają w bazie
+   * skopiowany opis z Otomoto, czasem razem z danymi kontaktowymi, które
+   * sprzedający wpisał w treść.
+   */
+  async function rebuildDescriptions() {
+    const published = scrapedListings.filter((l) => l.status === 'published' && l.listing_id);
+    if (published.length === 0) {
+      alert('Brak opublikowanych ogłoszeń z tej kolejki.');
+      return;
+    }
+    if (!window.confirm(`Przebudować opisy ${published.length} opublikowanych ogłoszeń na wersję z faktów?`)) return;
+
+    let updated = 0;
+    for (const listing of published) {
+      const raw = listing.raw_data;
+      const description = buildDescription({
+        brand: raw.brand,
+        model: raw.model,
+        year: raw.year,
+        mileage: raw.mileage,
+        location: raw.location,
+        monthlyPayment: raw.monthlyPayment,
+        transferFee: raw.transferFee,
+        remainingInstallments: raw.remainingInstallments,
+        totalInstallments: raw.totalInstallments,
+        buyoutPrice: raw.buyoutPrice,
+        remainingIsDerived: raw.remainingIsDerived,
+      });
+      if (!description) continue;
+
+      const { error } = await supabase
+        .from('listings')
+        .update({ description })
+        .eq('id', listing.listing_id!);
+      if (!error) updated++;
+    }
+    alert(`Przebudowano opisy: ${updated} z ${published.length}.`);
+    loadData();
+  }
+
+  /** Zdejmuje opublikowane ogłoszenie ze strony; wpis zostaje jako odrzucony,
+   *  żeby kolejny import go nie przywrócił. */
+  async function unpublishListing(listing: ScrapedListing) {
+    if (!window.confirm(`Usunąć ze strony „${listing.raw_data.title}"? Ogłoszenie zniknie z serwisu.`)) return;
+
+    if (listing.listing_id) {
+      const { error } = await supabase.from('listings').delete().eq('id', listing.listing_id);
+      if (error) {
+        alert(`Nie udało się usunąć ogłoszenia: ${error.message}`);
+        return;
+      }
+    }
+    await supabase
+      .from('scraped_listings')
+      .update({ status: 'rejected', listing_id: null, processed_at: new Date().toISOString() })
+      .eq('id', listing.id);
+
+    loadData();
+  }
+
+  /** Kasuje wpis z kolejki na dobre. Uwaga: bez niego kolejny import może
+   *  pobrać to ogłoszenie ponownie — odsiewanie działa po `external_id`. */
+  async function deleteQueueEntry(listing: ScrapedListing) {
+    if (!window.confirm('Usunąć wpis z kolejki na stałe? Kolejny import może pobrać to ogłoszenie ponownie.')) return;
+    await supabase.from('scraped_listings').delete().eq('id', listing.id);
     loadData();
   }
 
@@ -438,7 +562,29 @@ export default function AdminScrapingPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold mb-6">Scraped Listings ({scrapedListings.length})</h2>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-bold">
+            Kolejka importu ({scrapedListings.length})
+            {' · '}
+            <span className="text-sm font-normal text-gray-500">
+              kompletnych: {scrapedListings.filter((l) => l.raw_data.is_complete && (l.status === 'pending' || l.status === 'approved')).length}
+            </span>
+          </h2>
+          <button
+            onClick={rebuildDescriptions}
+            className="rounded-lg border border-amber-300 px-4 py-2 text-sm text-amber-800 hover:bg-amber-50"
+            title="Podmienia skopiowane opisy na wygenerowane z faktów"
+          >
+            Przebuduj opisy opublikowanych
+          </button>
+          <button
+            onClick={publishAllComplete}
+            disabled={publishingAll}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {publishingAll ? 'Publikuję…' : 'Opublikuj wszystkie kompletne'}
+          </button>
+        </div>
 
         <div className="space-y-4">
           {scrapedListings.map((listing) => (
@@ -457,7 +603,14 @@ export default function AdminScrapingPage() {
                     </span>
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{listing.raw_data.description}</p>
+                  <p className="mb-2 text-sm text-gray-700">{listing.raw_data.description}</p>
+
+                  {listing.raw_data.source_excerpt && (
+                    <blockquote className="mb-2 border-l-2 border-gray-300 pl-3 text-xs italic text-gray-500">
+                      „{listing.raw_data.source_excerpt}"
+                      <span className="not-italic"> — fragment ogłoszenia źródłowego, do weryfikacji</span>
+                    </blockquote>
+                  )}
 
                   <p className="text-xs text-gray-500 mb-2">
                     {[listing.raw_data.brand, listing.raw_data.model, listing.raw_data.year,
@@ -480,6 +633,11 @@ export default function AdminScrapingPage() {
                         {listing.raw_data.remainingIsDerived && (
                           <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700">
                             liczba rat wyliczona z daty końca umowy
+                          </span>
+                        )}
+                        {listing.raw_data.priceType === 'netto' && (
+                          <span className="rounded bg-purple-100 px-2 py-0.5 text-purple-700">
+                            kwoty netto
                           </span>
                         )}
                       </div>
@@ -544,7 +702,27 @@ export default function AdminScrapingPage() {
                     onClick={() => publishListing(listing)}
                     className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
-                    Publish
+                    Publikuj
+                  </button>
+                )}
+
+                {listing.status === 'published' && (
+                  <button
+                    onClick={() => unpublishListing(listing)}
+                    className="ml-4 whitespace-nowrap rounded-lg border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                    title="Usuwa ogłoszenie z serwisu; wpis zostaje jako odrzucony"
+                  >
+                    Usuń ze strony
+                  </button>
+                )}
+
+                {(listing.status === 'rejected' || listing.status === 'published') && (
+                  <button
+                    onClick={() => deleteQueueEntry(listing)}
+                    className="ml-2 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                    title="Usuń wpis z kolejki na stałe"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 )}
               </div>

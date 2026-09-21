@@ -24,6 +24,12 @@ export type CesjaEconomics = {
   totalInstallments: number | null;
   buyoutPrice: number | null;
   /**
+   * 'netto' albo 'brutto', jeśli ogłoszenie to precyzuje przy kwocie raty.
+   * Różnica to 23%, więc potraktowanie kwoty netto jak brutto zaniża realny
+   * koszt o niemal jedną czwartą — a tego w ogłoszeniu nie widać.
+   */
+  priceType: 'netto' | 'brutto' | null;
+  /**
    * True, gdy liczby rat nie było wprost, a wyliczyliśmy ją z podanej daty
    * końca umowy. Wartość jest wtedy przybliżeniem (pełne miesiące do tej daty)
    * i osoba zatwierdzająca ogłoszenie musi ją zobaczyć jako wyliczoną.
@@ -37,6 +43,7 @@ export const EMPTY_ECONOMICS: CesjaEconomics = {
   remainingInstallments: null,
   totalInstallments: null,
   buyoutPrice: null,
+  priceType: null,
   remainingIsDerived: false,
 };
 
@@ -125,7 +132,8 @@ const BUYOUT_PATTERNS = [
  * „Spłacone 22 raty z 60 rat" — jedyny wariant, w którym liczba pozostałych
  * rat nie pada wprost i trzeba ją odjąć. Zwracamy obie liczby naraz.
  */
-const PAID_OF_TOTAL_PATTERN = /sp[łl]acon\w*\s*(\d{1,3})\s*rat\w*\s*(?:z|\/|na)\s*(\d{1,3})\s*rat/i;
+const PAID_OF_TOTAL_PATTERN =
+  /(?:sp[łl]acon\w*|op[łl]acon\w*|zap[łl]acon\w*)\s*(?:rat\w*)?\s*:?\s*(\d{1,3})\s*(?:rat\w*)?\s*(?:z|\/|na)\s*(\d{1,3})/i;
 
 const REMAINING_PATTERNS = [
   /(?:pozosta[łl]o|zosta[łl]o|pozosta[jł]\w*|do\s+sp[łl]aty)\s*(?:jeszcze\s*)?(\d{1,3})\s*rat/gi,
@@ -159,6 +167,10 @@ function monthsUntil(month: number, year: number, now: Date): number | null {
   return months >= 1 && months <= 180 ? months : null;
 }
 
+/** Netto/brutto rozpoznajemy tylko w sąsiedztwie raty — globalne zliczanie
+ *  myliłoby się o kwoty wykupu i ceny pojazdu. */
+const PRICE_TYPE_PATTERN = /rat\w*[^.]{0,45}?\b(netto|brutto)\b/i;
+
 const isMonthly = (v: number) => v >= 100 && v <= 60_000;
 const isFee = (v: number) => v >= 0 && v <= 900_000;
 const isBuyout = (v: number) => v >= 0 && v <= 2_000_000;
@@ -180,19 +192,26 @@ export function parseCesjaEconomics(rawText: string, now: Date = new Date()): Ce
   // mogłaby przypadkiem stać obok słowa „odstępne" w dalszej części opisu.
   const noFee = /bez\s+odst[ęe]pn\w*|odst[ęe]pne\s*(?::|-|–)?\s*(?:0|brak|zero|-)\b/i.test(text);
 
-  const ratio = RATIO_PATTERN.exec(text);
   let remaining = firstMatch(text, REMAINING_PATTERNS, isInstallments);
   let total = firstMatch(text, TOTAL_PATTERNS, isInstallments);
 
+  // Kolejność ma znaczenie i kosztowała błąd: zapis „Spłacone rat: 9/48"
+  // wygląda identycznie jak „9/48 rat", ale znaczy coś odwrotnego —
+  // 9 rat JUŻ ZAPŁACONO, zostało 39. Wzorzec spłaconych musi więc zadziałać
+  // PRZED ogólnym ułamkiem, a gdy trafi, ułamka już nie używamy.
   const paid = PAID_OF_TOTAL_PATTERN.exec(text);
+  let paidMatched = false;
   if (paid) {
     const alreadyPaid = Number(paid[1]);
     const contractLength = Number(paid[2]);
     if (isInstallments(alreadyPaid) && isInstallments(contractLength) && alreadyPaid < contractLength) {
       remaining ??= contractLength - alreadyPaid;
       total ??= contractLength;
+      paidMatched = true;
     }
   }
+
+  const ratio = paidMatched ? null : RATIO_PATTERN.exec(text);
 
   if (ratio) {
     const a = Number(ratio[1]);
@@ -231,6 +250,7 @@ export function parseCesjaEconomics(rawText: string, now: Date = new Date()): Ce
     remainingInstallments: remaining,
     totalInstallments: total,
     buyoutPrice: firstMatch(text, BUYOUT_PATTERNS, isBuyout),
+    priceType: (PRICE_TYPE_PATTERN.exec(text)?.[1]?.toLowerCase() as 'netto' | 'brutto') ?? null,
     remainingIsDerived,
   };
 }

@@ -33,6 +33,7 @@ import {
   mentionsCesja,
   parseCesjaEconomics,
 } from '../_shared/cesjaParser.ts';
+import { buildDescription, buildExcerpt } from '../_shared/listingText.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -303,12 +304,15 @@ Deno.serve(async (req: Request) => {
           const advert = detail?.props?.pageProps?.advert;
           if (!advert) continue;
 
-          const description = String(advert.description ?? '')
+          // Pełny opis z Otomoto służy WYŁĄCZNIE do wyciągnięcia liczb i nie
+          // jest nigdzie zapisywany — to cudzy utwór. Do bazy trafia nasze
+          // własne zdanie złożone z faktów oraz krótki, oczyszczony cytat.
+          const sourceDescription = String(advert.description ?? '')
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
 
-          const economics = parseCesjaEconomics(`${node.title ?? ''} ${description}`);
+          const economics = parseCesjaEconomics(`${node.title ?? ''} ${sourceDescription}`);
           const photos: string[] = Array.isArray(advert.images?.photos)
             ? advert.images.photos.map((photo) => photo?.url).filter((url): url is string => Boolean(url)).slice(0, 8)
             : [node.thumbnail?.x2 ?? node.thumbnail?.x1].filter(Boolean) as string[];
@@ -325,13 +329,26 @@ Deno.serve(async (req: Request) => {
             mileage: mileageRaw ? Number(String(mileageRaw).replace(/\D/g, '')) || null : null,
             gearbox: paramValue(advert, 'gearbox'),
             vehicle_type: 'samochód',
-            description,
             images: photos,
             location: node.location?.city?.name ?? null,
             vehicle_price: node.price?.amount?.units ?? null,
             source_created_at: advert.createdAt ?? node.createdAt ?? null,
             ...economics,
             is_complete: isPublishable(economics),
+            // Krótki, oczyszczony z danych kontaktowych fragment oryginału —
+            // do weryfikacji w panelu i ewentualnie jako oznaczony cytat.
+            source_excerpt: buildExcerpt(sourceDescription),
+            // Opis, który faktycznie pójdzie na stronę. Przy publikacji jest
+            // składany ponownie, bo moderator może poprawić liczby.
+            description: buildDescription({
+              brand: paramValue(advert, 'make'),
+              model: paramValue(advert, 'model'),
+              year: yearRaw ? Number(String(yearRaw).replace(/\D/g, '')) || null : null,
+              mileage: mileageRaw ? Number(String(mileageRaw).replace(/\D/g, '')) || null : null,
+              gearbox: paramValue(advert, 'gearbox'),
+              location: node.location?.city?.name ?? null,
+              ...economics,
+            }),
           };
 
           const { error } = await supabase.from('scraped_listings').upsert(

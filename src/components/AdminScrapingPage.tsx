@@ -222,38 +222,42 @@ export default function AdminScrapingPage() {
       return;
     }
 
-    const { error } = await supabase
+    // Dopisujemy zwrócony wiersz do listy zamiast przeładowywać całą stronę —
+    // inaczej dodanie źródła gubiło stan kolejki i przewijało na początek.
+    const { data, error } = await supabase
       .from('scraping_sources')
-      .insert([newSource]);
+      .insert([newSource])
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Error adding source:', error);
-      setScrapeSummary('Nie udało się dodać źródła.');
-    } else {
-      setNewSource({ name: '', type: 'rss', url: '' });
-      setShowAddSource(false);
-      loadData();
+    if (error || !data) {
+      console.error('Nie udało się dodać źródła:', error);
+      setScrapeSummary(`Nie udało się dodać źródła: ${error?.message ?? 'nieznany błąd'}`);
+      return;
     }
+
+    setSources((prev) => [data, ...prev]);
+    setNewSource({ name: '', type: 'rss', url: '' });
+    setShowAddSource(false);
   }
 
   async function toggleSource(id: string, isActive: boolean) {
+    setSources((prev) => prev.map((s) => (s.id === id ? { ...s, is_active: !isActive } : s)));
     await supabase
       .from('scraping_sources')
       .update({ is_active: !isActive })
       .eq('id', id);
-
-    loadData();
   }
 
   async function deleteSource(id: string) {
-    if (!confirm('Are you sure you want to delete this source?')) return;
+    const snapshot = sources.find((s) => s.id === id);
+    setSources((prev) => prev.filter((s) => s.id !== id));
 
-    await supabase
-      .from('scraping_sources')
-      .delete()
-      .eq('id', id);
-
-    loadData();
+    const { error } = await supabase.from('scraping_sources').delete().eq('id', id);
+    if (error && snapshot) {
+      setSources((prev) => [snapshot, ...prev]);
+      setScrapeSummary(`Nie udało się usunąć źródła: ${error.message}`);
+    }
   }
 
   async function updateListingStatus(id: string, status: 'approved' | 'rejected') {

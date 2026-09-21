@@ -19,13 +19,51 @@ interface ScrapedListing {
   raw_data: {
     title?: string;
     description?: string;
-    price?: number;
     external_url?: string;
     brand?: string;
     model?: string;
+    year?: number | null;
+    mileage?: number | null;
+    vehicle_type?: string;
+    images?: string[];
+    location?: string | null;
+    vehicle_price?: number | null;
+    monthlyPayment?: number | null;
+    transferFee?: number | null;
+    remainingInstallments?: number | null;
+    totalInstallments?: number | null;
+    buyoutPrice?: number | null;
+    remainingIsDerived?: boolean;
+    is_complete?: boolean;
   };
   status: 'pending' | 'approved' | 'rejected' | 'published';
   created_at: string;
+}
+
+/**
+ * Cztery liczby, bez których ogłoszenia nie da się zapisać — kolumny
+ * `monthly_payment`, `transfer_fee`, `remaining_installments`
+ * i `total_installments` są NOT NULL. Parser wyciąga komplet mniej więcej
+ * w co piątym ogłoszeniu, więc resztę uzupełnia człowiek przy zatwierdzaniu.
+ */
+type EconomicsDraft = {
+  monthlyPayment: string;
+  transferFee: string;
+  remainingInstallments: string;
+  totalInstallments: string;
+  buyoutPrice: string;
+};
+
+function draftFrom(listing: ScrapedListing): EconomicsDraft {
+  const raw = listing.raw_data;
+  const text = (value: number | null | undefined) => (value == null ? '' : String(value));
+  return {
+    monthlyPayment: text(raw.monthlyPayment),
+    transferFee: text(raw.transferFee),
+    remainingInstallments: text(raw.remainingInstallments),
+    totalInstallments: text(raw.totalInstallments ?? raw.remainingInstallments),
+    buyoutPrice: text(raw.buyoutPrice),
+  };
 }
 
 export default function AdminScrapingPage() {
@@ -33,6 +71,7 @@ export default function AdminScrapingPage() {
   const [scrapedListings, setScrapedListings] = useState<ScrapedListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, EconomicsDraft>>({});
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -83,7 +122,16 @@ export default function AdminScrapingPage() {
       );
 
       const result = await response.json();
-      alert(`Scraping completed! Processed: ${result.processed} listings`);
+      const perSource = (result.results ?? [])
+        .map((entry: Record<string, unknown>) =>
+          entry.error
+            ? `${entry.source}: BŁĄD ${entry.error}`
+            : entry.skipped
+              ? `${entry.source}: pominięte (${entry.skipped})`
+              : `${entry.source}: kandydatów ${entry.candidates}, znanych ${entry.alreadyKnown}, pobrano ${entry.fetched}, dodano ${entry.inserted} (w tym kompletnych ${entry.complete})`,
+        )
+        .join('\n');
+      alert(`Import zakończony. Dodano ${result.processed} ogłoszeń.\n\n${perSource}`);
       loadData();
     } catch (error) {
       console.error('Error running scraper:', error);
@@ -166,8 +214,45 @@ export default function AdminScrapingPage() {
     loadData();
   }
 
+  function setDraft(id: string, patch: Partial<EconomicsDraft>, seed: ScrapedListing) {
+    setDrafts((prev) => ({ ...prev, [id]: { ...(prev[id] ?? draftFrom(seed)), ...patch } }));
+  }
+
+  /**
+   * Poprzednia wersja tej funkcji nie mogła zadziałać ani razu: wstawiała
+   * kolumny, których w tabeli nie ma (`transmission`, `body_type`, `color`,
+   * `location`, `contact_*`, `fuel_type`), a pomijała wszystkie NOT NULL
+   * dotyczące cesji. Każde kliknięcie „Publikuj" kończyło się błędem Postgresa
+   * schowanym pod komunikatem „Error publishing listing".
+   */
   async function publishListing(listing: ScrapedListing) {
-    const rawData = listing.raw_data;
+    const raw = listing.raw_data;
+    const draft = drafts[listing.id] ?? draftFrom(listing);
+
+    const toNumber = (value: string): number | null => {
+      if (!value.trim()) return null;
+      const parsed = Number(value.replace(/\s/g, '').replace(',', '.'));
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const monthlyPayment = toNumber(draft.monthlyPayment);
+    const transferFee = toNumber(draft.transferFee);
+    const remainingInstallments = toNumber(draft.remainingInstallments);
+    const totalInstallments = toNumber(draft.totalInstallments);
+
+    const missing: string[] = [];
+    if (monthlyPayment == null) missing.push('rata miesięczna');
+    if (transferFee == null) missing.push('odstępne (0 jeśli brak)');
+    if (remainingInstallments == null) missing.push('pozostałe raty');
+    if (totalInstallments == null) missing.push('raty łącznie');
+    if (!raw.brand) missing.push('marka');
+    if (!raw.model) missing.push('model');
+    if (raw.year == null) missing.push('rocznik');
+
+    if (missing.length > 0) {
+      alert(`Nie mogę opublikować — brakuje: ${missing.join(', ')}.\nUzupełnij pola przy ogłoszeniu i spróbuj ponownie.`);
+      return;
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -176,41 +261,46 @@ export default function AdminScrapingPage() {
       .from('listings')
       .insert([{
         user_id: user.id,
-        title: rawData.title || 'Imported Listing',
-        description: rawData.description || '',
-        price: rawData.price || 0,
-        price_type: 'monthly',
-        brand: rawData.brand || '',
-        model: rawData.model || '',
-        year: 2024,
-        mileage: 0,
-        fuel_type: 'petrol',
-        transmission: 'automatic',
-        body_type: 'sedan',
-        color: 'black',
-        location: 'Warszawa',
-        contact_name: user.email?.split('@')[0] || 'Admin',
-        contact_phone: '000000000',
-        contact_email: user.email || '',
+        title: raw.title || `${raw.brand} ${raw.model}`.trim(),
+        description: raw.description || '',
+        vehicle_type: raw.vehicle_type || 'samochód',
+        brand: raw.brand,
+        model: raw.model,
+        year: raw.year,
+        mileage: raw.mileage ?? null,
+        monthly_payment: monthlyPayment,
+        transfer_fee: transferFee,
+        remaining_installments: remainingInstallments,
+        total_installments: totalInstallments,
+        buyout_price: toNumber(draft.buyoutPrice),
+        images: raw.images ?? [],
+        price_type: 'brutto',
+        status: 'published',
+        // Ogłoszenie nie jest nasze — zapisujemy skąd pochodzi i że zostało
+        // dodane za autora. Bez tego nie da się go potem przekazać właścicielowi.
+        origin: 'imported',
+        source_url: raw.external_url ?? null,
       }])
       .select()
       .single();
 
-    if (!error && newListing) {
-      await supabase
-        .from('scraped_listings')
-        .update({
-          status: 'published',
-          listing_id: newListing.id,
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', listing.id);
-
-      alert('Listing published successfully!');
-      loadData();
-    } else {
-      alert('Error publishing listing');
+    if (error || !newListing) {
+      console.error('Publikacja nieudana:', error);
+      alert(`Publikacja nieudana: ${error?.message ?? 'nieznany błąd'}`);
+      return;
     }
+
+    await supabase
+      .from('scraped_listings')
+      .update({
+        status: 'published',
+        listing_id: newListing.id,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', listing.id);
+
+    alert('Ogłoszenie opublikowane.');
+    loadData();
   }
 
   if (loading) {
@@ -368,6 +458,51 @@ export default function AdminScrapingPage() {
                   </div>
 
                   <p className="text-sm text-gray-600 mb-2 line-clamp-2">{listing.raw_data.description}</p>
+
+                  <p className="text-xs text-gray-500 mb-2">
+                    {[listing.raw_data.brand, listing.raw_data.model, listing.raw_data.year,
+                      listing.raw_data.mileage ? `${listing.raw_data.mileage.toLocaleString('pl-PL')} km` : null,
+                      listing.raw_data.location].filter(Boolean).join(' · ')}
+                  </p>
+
+                  {/* Parser trafia komplet liczb mniej więcej w co piątym ogłoszeniu.
+                      Reszta wymaga uzupełnienia tutaj — inaczej zapis do `listings`
+                      odbije się o NOT NULL. */}
+                  {(listing.status === 'pending' || listing.status === 'approved') && (
+                    <div className="my-3 rounded border border-gray-200 bg-gray-50 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
+                        <span>Dane cesji</span>
+                        {listing.raw_data.is_complete ? (
+                          <span className="rounded bg-green-100 px-2 py-0.5 text-green-700">komplet z ogłoszenia</span>
+                        ) : (
+                          <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-700">uzupełnij ręcznie</span>
+                        )}
+                        {listing.raw_data.remainingIsDerived && (
+                          <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700">
+                            liczba rat wyliczona z daty końca umowy
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                        {([
+                          ['monthlyPayment', 'Rata zł'],
+                          ['transferFee', 'Odstępne zł'],
+                          ['remainingInstallments', 'Pozostałe raty'],
+                          ['totalInstallments', 'Raty łącznie'],
+                          ['buyoutPrice', 'Wykup zł'],
+                        ] as [keyof EconomicsDraft, string][]).map(([field, label]) => (
+                          <label key={field} className="text-xs text-gray-600">
+                            {label}
+                            <input
+                              value={(drafts[listing.id] ?? draftFrom(listing))[field]}
+                              onChange={(e) => setDraft(listing.id, { [field]: e.target.value }, listing)}
+                              className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {listing.raw_data.external_url && (
                     <a

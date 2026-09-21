@@ -260,6 +260,13 @@ ${sourceText ? `Tekst ogłoszenia:\n${sourceText}` : "(brak tekstu, tylko zdjęc
     });
 
     if (!anthropicRes.ok) {
+      // Bez tego log/u nieudane wywołanie było nie do odróżnienia od ogłoszenia,
+      // w którym po prostu nie ma danych o cesji — obie ścieżki zwracają ten sam
+      // pusty wynik. Funkcja potrafiła być martwa miesiącami i nikt by nie zauważył.
+      const detail = await anthropicRes.text().catch(() => "(brak treści)");
+      console.error(
+        `analyze-listing-input: Anthropic zwróciło ${anthropicRes.status} ${anthropicRes.statusText}: ${detail.slice(0, 500)}`,
+      );
       return new Response(JSON.stringify(emptyResult()), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

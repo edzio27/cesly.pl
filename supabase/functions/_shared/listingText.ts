@@ -75,7 +75,12 @@ function cesjaSentence(facts: ListingFacts): string {
 
   if (facts.remainingInstallments != null) {
     const count = facts.remainingInstallments;
-    const suffix = facts.totalInstallments ? ` z ${facts.totalInstallments}` : '';
+    // „16 z 16 rat" to nie jest informacja, tylko mylący szum: tak wygląda
+    // zapis, gdy łącznej liczby rat nie udało się ustalić i podstawiono
+    // liczbę pozostałych. Czytelnik zrozumiałby to jako umowę, która od
+    // początku miała 16 rat. Podajemy całość tylko wtedy, gdy ją znamy.
+    const total = facts.totalInstallments;
+    const suffix = total != null && total > count ? ` z ${total}` : '';
     parts.push(`do końca umowy ${count}${suffix} ${ratyLabel(count)}`);
   }
 

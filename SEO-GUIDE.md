@@ -51,7 +51,22 @@ Funkcja `seo-page` renderuje statycznie dwa pozostałe typy stron:
 - `/` — H1, lead, statystyki, najnowsze oferty, indeks kategorii, „Czym jest cesja", kroki, FAQ
 - `/cesja-leasingu/<slug>` — H1 kategorii, lead, statystyki, lista ofert, linki do pozostałych kategorii
 
-Reguły `has` w `vercel.json` kierują tam wyłącznie crawlery; człowiek dostaje `index.html` i SPA.
+Crawlery trafiają tam dwiema drogami, bo Vercel routuje te ścieżki inaczej:
+- `/cesja-leasingu/:slug` — reguła `has` w `vercel.json`;
+- `/` — **`middleware.ts`**, nie `vercel.json`.
+
+Powód tego rozdzielenia jest niepozorny i kosztował jedno nieudane wdrożenie: reguły `rewrites`
+z `vercel.json` stosują się dopiero **po** sprawdzeniu systemu plików. Pod `/listing/:id`
+i `/cesja-leasingu/:slug` żaden plik nie istnieje, więc przepisanie się odpala. Pod `/` leży
+statyczny `index.html` z buildu — Vercel serwuje go i nigdy nie dochodzi do reguły. Middleware
+odpala się przed systemem plików, więc tylko ono jest w stanie przechwycić stronę główną.
+Jego `matcher` obejmuje wyłącznie `/`, żeby nie dotykać reszty routingu.
+
+Objaw, gdyby to kiedyś wróciło: `curl -s https://cesly.pl/ -A "GPTBot/1.0" | wc -c` zwraca
+~4 kB zamiast kilkudziesięciu, a nagłówek odpowiedzi ma `cache-control: max-age=0,
+must-revalidate` (czyli `index.html`) zamiast `max-age=1800` (czyli funkcji `seo-page`).
+
+Człowiek w obu przypadkach dostaje `index.html` i SPA.
 To dynamic rendering, nie cloaking — obie wersje pokazują te same oferty i ten sam tekst, bo treść
 redakcyjna (`_shared/seoContent.ts`) i katalog kategorii (`_shared/seoCategories.ts`) są wspólne
 dla funkcji brzegowej i aplikacji React (ta importuje je przez re-eksport w `src/data/`).

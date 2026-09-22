@@ -4,6 +4,7 @@ import { Listing } from '../lib/supabase';
 import { trackListingClick } from '../utils/analytics';
 import { calculateDealScore, DEAL_SCORE_BADGE_THRESHOLD, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
 import { formatPLN, formatPLNCompact, listingAge, listingCosts } from '../utils/listingMetrics';
+import { formatInstallments } from '../data/listingText';
 
 type ListingCardProps = {
   listing: Listing;
@@ -183,7 +184,7 @@ export function ListingCard({
           <Metric
             icon={<CalendarDays size={11} />}
             label="Rat"
-            value={`${listing.remaining_installments}/${listing.total_installments}`}
+            value={formatInstallments(listing.remaining_installments, listing.total_installments, '/')}
           />
           <Metric
             icon={<Gauge size={11} />}

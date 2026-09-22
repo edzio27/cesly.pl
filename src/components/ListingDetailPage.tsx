@@ -23,6 +23,7 @@ import { ListingCard } from './ListingCard';
 import { trackPageView, trackListingClick } from '../utils/analytics';
 import { calculateDealScore, DEAL_SCORE_BADGE_THRESHOLD, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
 import { formatPLN, listingAge, listingCosts } from '../utils/listingMetrics';
+import { formatInstallments } from '../data/listingText';
 
 const FALLBACK_IMAGE =
   'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -484,7 +485,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
     { label: 'Przebieg', value: listing.mileage != null ? `${listing.mileage.toLocaleString('pl-PL')} km` : '—' },
     { label: 'Paliwo', value: listing.fuel_type || '—' },
     { label: 'Typ pojazdu', value: listing.vehicle_type },
-    { label: 'Pozostałe raty', value: `${listing.remaining_installments} z ${listing.total_installments}` },
+    { label: 'Pozostałe raty', value: formatInstallments(listing.remaining_installments, listing.total_installments) },
     {
       label: 'Koniec umowy za',
       value: costs.monthsLeft > 0 ? `${costs.monthsLeft} mies.` : '—',
@@ -732,7 +733,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                 <div className="flex items-center justify-between py-3">
                   <dt className="text-sm text-ink-500">Pozostałe raty</dt>
                   <dd className="text-sm font-bold text-ink-900">
-                    {listing.remaining_installments} z {listing.total_installments}
+                    {formatInstallments(listing.remaining_installments, listing.total_installments)}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between py-3">

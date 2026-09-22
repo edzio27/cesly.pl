@@ -163,3 +163,18 @@ export function buildExcerpt(text: string, maxLength = MAX_EXCERPT_LENGTH): stri
   const lastStop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '));
   return lastStop > maxLength * 0.5 ? cut.slice(0, lastStop + 1) : `${cut.trimEnd()}…`;
 }
+
+/**
+ * Zapis „pozostałe / wszystkie" raty. Gdy całkowitej liczby rat nie udało się
+ * ustalić, w bazie leży tam liczba pozostałych (kolumna jest NOT NULL) —
+ * i wtedy „29 / 29" czyta się jak umowa, która od początku miała 29 rat.
+ * W takiej sytuacji podajemy samą liczbę pozostałych.
+ */
+export function formatInstallments(
+  remaining: number | null | undefined,
+  total: number | null | undefined,
+  separator = ' z ',
+): string {
+  if (remaining == null) return '—';
+  return total != null && total > remaining ? `${remaining}${separator}${total}` : String(remaining);
+}

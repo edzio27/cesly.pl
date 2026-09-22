@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { formatInstallments } from '../_shared/listingText.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,7 +96,7 @@ Deno.serve(async (req: Request) => {
       },
       additionalProperty: [
         { '@type': 'PropertyValue', name: 'Typ oferty', value: 'Cesja leasingu' },
-        { '@type': 'PropertyValue', name: 'Pozostałe raty', value: `${listing.remaining_installments} / ${listing.total_installments}` },
+        { '@type': 'PropertyValue', name: 'Pozostałe raty', value: formatInstallments(listing.remaining_installments, listing.total_installments, ' / ') },
         { '@type': 'PropertyValue', name: 'Odstępne', value: `${listing.transfer_fee} zł` },
         { '@type': 'PropertyValue', name: 'Typ pojazdu', value: listing.vehicle_type },
       ],
@@ -105,7 +106,7 @@ Deno.serve(async (req: Request) => {
       `<tr><th>Rata miesięczna</th><td>${escapeHtml(String(listing.monthly_payment))} zł</td></tr>`,
       `<tr><th>Odstępne</th><td>${escapeHtml(String(listing.transfer_fee))} zł</td></tr>`,
       listing.buyout_price ? `<tr><th>Wykup</th><td>${escapeHtml(String(listing.buyout_price))} zł</td></tr>` : '',
-      `<tr><th>Pozostałe raty</th><td>${escapeHtml(String(listing.remaining_installments))} / ${escapeHtml(String(listing.total_installments))}</td></tr>`,
+      `<tr><th>Pozostałe raty</th><td>${escapeHtml(formatInstallments(listing.remaining_installments, listing.total_installments, ' / '))}</td></tr>`,
       listing.mileage ? `<tr><th>Przebieg</th><td>${escapeHtml(String(listing.mileage))} km</td></tr>` : '',
       `<tr><th>Typ pojazdu</th><td>${escapeHtml(listing.vehicle_type)}</td></tr>`,
       listing.fuel_type ? `<tr><th>Paliwo</th><td>${escapeHtml(listing.fuel_type)}</td></tr>` : '',

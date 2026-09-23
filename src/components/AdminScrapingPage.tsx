@@ -70,6 +70,28 @@ function draftFrom(listing: ScrapedListing): EconomicsDraft {
   };
 }
 
+/** Odpowiedź `import_health()` — stan harmonogramu i kolejki w jednej paczce. */
+type ImportHealth = {
+  scheduled: boolean;
+  secret_configured: boolean;
+  last_run_at: string | null;
+  last_run_status: string | null;
+  last_run_message: string | null;
+  last_source_scrape_at: string | null;
+  queue_pending: number;
+  queue_approved: number;
+};
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return 'nigdy';
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return 'przed chwilą';
+  if (minutes < 60) return `${minutes} min temu`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours} godz. temu`;
+  return `${Math.round(hours / 24)} dni temu`;
+}
+
 export default function AdminScrapingPage() {
   const [sources, setSources] = useState<ScrapingSource[]>([]);
   const [scrapedListings, setScrapedListings] = useState<ScrapedListing[]>([]);
@@ -84,6 +106,7 @@ export default function AdminScrapingPage() {
   const [rowNotice, setRowNotice] = useState<Record<string, string>>({});
   const [busyRows, setBusyRows] = useState<Record<string, boolean>>({});
   const [scrapeSummary, setScrapeSummary] = useState<string | null>(null);
+  const [health, setHealth] = useState<ImportHealth | null>(null);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -138,6 +161,9 @@ export default function AdminScrapingPage() {
 
   async function loadData() {
     setLoading(true);
+
+    const { data: healthData } = await supabase.rpc('import_health');
+    if (healthData) setHealth(healthData as ImportHealth);
 
     const { data: sourcesData } = await supabase
       .from('scraping_sources')
@@ -645,6 +671,26 @@ export default function AdminScrapingPage() {
             {publishingAll ? 'Publikuję…' : 'Opublikuj wszystkie kompletne'}
           </button>
         </div>
+
+        {health && (
+          <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+            <span className="font-semibold text-gray-700">Harmonogram</span>
+            <span className={health.scheduled && health.secret_configured ? 'text-green-700' : 'text-amber-700'}>
+              {!health.scheduled
+                ? 'zadanie nieaktywne'
+                : !health.secret_configured
+                  ? 'brak sekretu w Vault — nie zadzwoni'
+                  : 'aktywny'}
+            </span>
+            <span className="text-gray-600">
+              ostatni przebieg: {relativeTime(health.last_run_at)}
+              {health.last_run_status ? ` (${health.last_run_status})` : ''}
+            </span>
+            <span className="text-gray-600">
+              ostatnie pobranie ze źródeł: {relativeTime(health.last_source_scrape_at)}
+            </span>
+          </div>
+        )}
 
         {scrapeSummary && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-lg bg-gray-900 px-4 py-3 text-sm text-white">

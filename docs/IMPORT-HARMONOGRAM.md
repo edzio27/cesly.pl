@@ -60,7 +60,24 @@ Usuń sekret — bez niego zadanie nie wykonuje wywołania:
 select vault.delete_secret((select id from vault.secrets where name = 'cesly_cron_secret'));
 ```
 
-## 3. Sprawdź, czy działa
+## Sprawdź, czy działa
+
+Najszybciej: panel `/admin-scraping` pokazuje na górze pasek ze stanem
+harmonogramu — czy zadanie jest aktywne, czy sekret jest w Vault, kiedy był
+ostatni przebieg i kiedy ostatnio coś pobrano ze źródeł.
+
+Żeby nie czekać na najbliższą godzinę z harmonogramu, można wywołać ten sam
+kod ręcznie w SQL Editorze:
+
+```sql
+select public.run_cesly_import();
+```
+
+Funkcja zwraca pustkę niezależnie od wyniku (to `void`), więc efekt sprawdź
+w panelu: licznik „do decyzji" powinien urosnąć w ciągu kilkunastu sekund.
+Jeśli nie urósł, zajrzyj do historii przebiegów poniżej.
+
+## Historia przebiegów
 
 ```sql
 select jobid, jobname, schedule, active from cron.job;

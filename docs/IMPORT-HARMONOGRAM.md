@@ -86,11 +86,21 @@ Formularz „Potrzebujesz pomocy przy cesji?" stoi pod każdym ogłoszeniem.
 Zgłoszenia lądują w tabeli `leads`, widocznej w menu administratora jako
 **Zapytania** (`/leady`).
 
-## Uruchomienie: wykonaj migrację
+## Stan: migracja zastosowana
 
-Formularz nie zadziała, dopóki tabela nie istnieje — zgłoszenie kończy się
-wtedy komunikatem „Nie udało się wysłać". Wklej do SQL Editora treść pliku
-`supabase/migrations/20260923100000_add_leads.sql`.
+Tabela `leads` jest już na produkcji (`supabase db push`, 23.09.2026).
+Zweryfikowane po wdrożeniu: niezalogowany może wysłać zgłoszenie, ale odczyt
+zwraca mu pustą listę.
+
+Przy okazji uporządkowana została historia migracji. Cztery lipcowe migracje
+figurowały jako niezastosowane, choć ich tabele (`saved_searches`, `messages`,
+`listing_reports`, `page_views`) istnieją — wykonano je przez panel. Oznaczono
+je jako zastosowane (`migration repair`), żeby `db push` nie próbował ich
+odtwarzać. Osierocony wpis `20260707190236` dostał plik-zaślepkę zamiast
+skasowania z historii.
+
+**Historia migracji tego projektu jest niepełna**, bo część zmian szła przez
+panel. Odtworzenie bazy od zera z samych plików nie da dzisiejszego schematu.
 
 Czytać zgłoszenia mogą **wyłącznie adresy wymienione w funkcji
 `is_lead_admin()`** w tej migracji. To dane osobowe osób trzecich: gdyby

@@ -334,12 +334,19 @@ Deno.serve(async (req: Request) => {
         //    znalezione z dwóch różnych zapytań (np. „cesja leasingu"
         //    i „przejmę leasing") trafiało do kolejki dwa razy, zmuszając
         //    do ponownej weryfikacji czegoś już przejrzanego.
+        //    Sprawdzamy DWA miejsca. Sama kolejka nie wystarcza: po
+        //    opublikowaniu ogłoszenia i skasowaniu jego wpisu z kolejki
+        //    znikała pamięć o nim i import przynosił je z powrotem — jako
+        //    nową propozycję czegoś, co od dawna wisi na stronie.
         const urls = candidates.map((node) => node.url!);
-        const { data: known } = await supabase
-          .from('scraped_listings')
-          .select('external_id')
-          .in('external_id', urls);
-        const knownIds = new Set((known ?? []).map((row) => row.external_id));
+        const [queueResult, publishedResult] = await Promise.all([
+          supabase.from('scraped_listings').select('external_id').in('external_id', urls),
+          supabase.from('listings').select('source_url').in('source_url', urls),
+        ]);
+        const knownIds = new Set<string>([
+          ...(queueResult.data ?? []).map((row) => row.external_id as string),
+          ...(publishedResult.data ?? []).map((row) => row.source_url as string).filter(Boolean),
+        ]);
         const fresh = candidates.filter((node) => !knownIds.has(node.url!)).slice(0, maxDetails);
 
         // 3. Strona oferty: stąd pochodzi opis, a więc rata i odstępne.

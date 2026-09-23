@@ -19,6 +19,15 @@ rozjechać.
 Dopóki sekretu nie ma w Vault, ścieżka jest **wyłączona**: porównanie zwraca
 `false`, a samo zadanie w ogóle nie wykonuje wywołania HTTP.
 
+## Kasowanie wpisu z kolejki a odsiewanie
+
+Odrzucaj, nie kasuj. Odsiewanie przy imporcie opiera się na tym, co pamięta
+baza: wpis w kolejce albo `source_url` opublikowanego ogłoszenia. Skasowany
+wpis to utrata tej pamięci — ogłoszenie wróci przy najbliższym przebiegu.
+
+Wpis odrzucony zostaje i działa jak zapora. Dlatego przycisk „Usuń ze strony"
+przy opublikowanym ogłoszeniu ustawia status `rejected`, zamiast kasować wiersz.
+
 ## Historia jednej usterki — warto przeczytać przed następną
 
 Uruchomienie harmonogramu zajęło kilka podejść i każde z nich wyglądało jak

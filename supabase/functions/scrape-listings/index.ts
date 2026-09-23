@@ -179,6 +179,7 @@ Deno.serve(async (req: Request) => {
     // drugiej kopii w zmiennej środowiskowej tej funkcji oznaczałoby, że każda
     // rotacja wymaga dwóch zgodnych zmian, a rozjazd kończy się cichym 401.
     let isCronCall = false;
+    let cronRejection: string | null = null;
     if (cronHeader) {
       const serviceClient = createClient(
         Deno.env.get('SUPABASE_URL')!,
@@ -187,7 +188,12 @@ Deno.serve(async (req: Request) => {
       const { data: matches, error: secretError } = await serviceClient.rpc('cron_secret_matches', {
         candidate: cronHeader,
       });
-      if (secretError) console.error(`scrape-listings: sprawdzenie sekretu nieudane: ${secretError.message}`);
+      if (secretError) {
+        console.error(`scrape-listings: sprawdzenie sekretu nieudane: ${secretError.message}`);
+        cronRejection = `sprawdzenie sekretu nie powiodło się: ${secretError.message}`;
+      } else if (matches !== true) {
+        cronRejection = 'nagłówek nie zgadza się z sekretem zapisanym w Vault';
+      }
       isCronCall = matches === true;
     }
 
@@ -195,6 +201,17 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
     );
+    // Wywołanie z harmonogramu odrzucamy osobnym komunikatem. Wcześniej
+    // wpadało w to samo „wymagane zalogowanie", co żądanie z klucza anon —
+    // przez co w logu pg_net nie dało się odróżnić złego sekretu od tego,
+    // że sprawdzenie w ogóle się nie wykonało. Powód nie zdradza sekretu.
+    if (cronRejection) {
+      return new Response(
+        JSON.stringify({ error: 'Odrzucono wywołanie z harmonogramu', powod: cronRejection }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     const { data: caller } = isCronCall ? { data: null } : await authClient.auth.getUser(token);
     if (!isCronCall && !caller?.user) {
       return new Response(

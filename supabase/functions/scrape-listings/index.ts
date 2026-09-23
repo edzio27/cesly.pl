@@ -160,9 +160,10 @@ Deno.serve(async (req: Request) => {
     // nie wynikało; teraz odpytuje zewnętrzny serwis i zapisuje wiersze, więc
     // wymagamy realnie zalogowanego użytkownika, a jeśli ustawiono ADMIN_EMAILS,
     // to także obecności na tej liście.
+    const cronHeader = req.headers.get('x-cron-secret');
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    if (!token && !req.headers.get('x-cron-secret')) {
+    if (!token && !cronHeader) {
       return new Response(JSON.stringify({ error: 'Brak nagłówka autoryzacji' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -170,12 +171,25 @@ Deno.serve(async (req: Request) => {
     }
 
     // Ścieżka dla harmonogramu: pg_cron nie ma sesji użytkownika, więc
-    // uwierzytelnia się wspólnym sekretem z nagłówka. Sekret jest osobny od
-    // klucza serwisowego celowo — gdyby wyciekł, daje wyłącznie prawo
-    // uruchomienia importu, a nie dostęp do bazy.
-    const cronSecret = Deno.env.get('CRON_SECRET');
-    const isCronCall =
-      !!cronSecret && req.headers.get('x-cron-secret') === cronSecret;
+    // uwierzytelnia się sekretem z nagłówka. Sekret jest osobny od klucza
+    // serwisowego celowo — gdyby wyciekł, daje wyłącznie prawo uruchomienia
+    // importu, a nie dostęp do bazy.
+    //
+    // Porównania dokonuje baza, bo sekret leży w Vault i tylko tam. Trzymanie
+    // drugiej kopii w zmiennej środowiskowej tej funkcji oznaczałoby, że każda
+    // rotacja wymaga dwóch zgodnych zmian, a rozjazd kończy się cichym 401.
+    let isCronCall = false;
+    if (cronHeader) {
+      const serviceClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const { data: matches, error: secretError } = await serviceClient.rpc('cron_secret_matches', {
+        candidate: cronHeader,
+      });
+      if (secretError) console.error(`scrape-listings: sprawdzenie sekretu nieudane: ${secretError.message}`);
+      isCronCall = matches === true;
+    }
 
     const authClient = createClient(
       Deno.env.get('SUPABASE_URL')!,

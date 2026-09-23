@@ -8,53 +8,57 @@ publikacja pozostaje decyzją człowieka w panelu.
 
 `pg_cron` nie ma sesji użytkownika, więc nie przejdzie normalnej kontroli
 (`auth.getUser`). Zamiast dawać mu klucz serwisowy — który otwiera całą bazę —
-funkcja przyjmuje nagłówek `x-cron-secret` z osobnym sekretem. Gdyby wyciekł,
-pozwala jedynie uruchomić import.
+funkcja przyjmuje nagłówek `x-cron-secret`. Gdyby wyciekł, pozwala jedynie
+uruchomić import.
 
-Dopóki `CRON_SECRET` nie jest ustawiony, ta ścieżka jest **wyłączona**:
-zmienna pusta oznacza, że żaden nagłówek nie zostanie uznany za prawidłowy.
+Sekret leży **wyłącznie w Vault**, pod nazwą `cesly_cron_secret`. Funkcja
+brzegowa nie ma własnej kopii — pyta bazę (`cron_secret_matches`), czy nagłówek
+się zgadza. Dzięki temu rotacja to jedna komenda, a nie dwie, które mogą się
+rozjechać.
 
-## 1. Ustaw sekret
+Dopóki sekretu nie ma w Vault, ścieżka jest **wyłączona**: porównanie zwraca
+`false`, a samo zadanie w ogóle nie wykonuje wywołania HTTP.
 
-Wygeneruj losową wartość i zapisz ją w sekretach projektu. Nie wklejaj tu
-niczego, co już gdzieś służy jako hasło czy klucz — to ma być nowy, losowy ciąg.
+## Co jest już zrobione
+
+Migracjami wdrożono: rozszerzenia `pg_cron` i `pg_net`, zadanie
+`cesly-import-cesji` (7:00, 13:00 i 19:00 UTC), funkcję `run_cesly_import()`
+oraz `cron_secret_matches()`. Obie są odebrane rolom `anon` i `authenticated` —
+sprawdzone: wywołanie z zewnątrz zwraca `permission denied`.
+
+## Zostaje jeden krok: ustaw sekret
+
+Wygeneruj losową wartość i zapisz ją w Vault. Nie używaj do tego niczego, co
+już gdzieś służy jako hasło czy klucz — to ma być nowy, losowy ciąg.
 
 ```bash
 openssl rand -hex 32
-npx supabase secrets set CRON_SECRET=<wygenerowana-wartość> --project-ref nuvafrdwxbzxyowrtnxp
 ```
 
-## 2. Zaplanuj zadanie
-
-W Supabase → SQL Editor. Rozszerzenia `pg_cron` i `pg_net` wystarczy włączyć raz.
+Potem w Supabase → SQL Editor:
 
 ```sql
-create extension if not exists pg_cron;
-create extension if not exists pg_net;
+select vault.create_secret('<wygenerowana-wartość>', 'cesly_cron_secret');
+```
 
-select cron.schedule(
-  'cesly-import-cesji',
-  '0 7,13,19 * * *',          -- 7:00, 13:00 i 19:00 UTC
-  $$
-  select net.http_post(
-    url := 'https://nuvafrdwxbzxyowrtnxp.supabase.co/functions/v1/scrape-listings',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'x-cron-secret', '<ta-sama-wartość-co-w-CRON_SECRET>'
-    ),
-    body := jsonb_build_object('maxPages', 2, 'maxDetails', 12)
-  );
-  $$
+Od tej chwili harmonogram zacznie działać przy najbliższym przebiegu.
+
+### Rotacja
+
+```sql
+select vault.update_secret(
+  (select id from vault.secrets where name = 'cesly_cron_secret'),
+  '<nowa-wartość>'
 );
 ```
 
-### Dlaczego trzy razy dziennie po 12 ofert
+### Wyłączenie
 
-Jeden przebieg pobiera stronę wyników plus po jednej stronie każdej oferty,
-z odstępem 1,5 s — to mieści się w limicie czasu funkcji brzegowej i nie
-generuje skoków ruchu na Otomoto. Trzy przebiegi to ~36 ofert dziennie,
-czyli po kilku dniach cała bieżąca podaż. Częściej nie ma sensu: nowych cesji
-przybywa kilkanaście dziennie, a odsiewanie i tak pominie znane ogłoszenia.
+Usuń sekret — bez niego zadanie nie wykonuje wywołania:
+
+```sql
+select vault.delete_secret((select id from vault.secrets where name = 'cesly_cron_secret'));
+```
 
 ## 3. Sprawdź, czy działa
 

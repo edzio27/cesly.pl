@@ -19,6 +19,32 @@ rozjechać.
 Dopóki sekretu nie ma w Vault, ścieżka jest **wyłączona**: porównanie zwraca
 `false`, a samo zadanie w ogóle nie wykonuje wywołania HTTP.
 
+## Historia jednej usterki — warto przeczytać przed następną
+
+Uruchomienie harmonogramu zajęło kilka podejść i każde z nich wyglądało jak
+inna awaria, choć przyczyna była jedna. Zapis na wypadek powtórki:
+
+1. **401 z komunikatem „wymagane zalogowanie"** — funkcja brzegowa odrzucała
+   wywołanie z harmonogramu tym samym komunikatem co żądanie z klucza anon,
+   więc nie dało się odróżnić złego sekretu od nieudanego sprawdzenia.
+   Naprawione: odrzucenie z nagłówkiem harmonogramu ma własny komunikat
+   z powodem.
+2. **Sekret „jest, a nie działa"** — diagnostyka pokazała, że wartość w Vault
+   nie składa się wyłącznie z drukowalnych znaków ASCII. Nagłówek HTTP nie
+   przeniesie takiego znaku, więc baza wysyłała co innego, niż funkcja
+   odbierała. Rozwiązanie: sekret generowany w bazie
+   (`encode(gen_random_bytes(32), 'hex')`), a dodatkowo w nagłówku leci
+   **skrót SHA-256**, więc zawartość sekretu przestała mieć znaczenie.
+3. **NULL w `status_code`** — po naprawieniu sekretu wywołanie wreszcie
+   robiło swoje i trwało 25-40 s, a `pg_net` czeka domyślnie 5 s. Limit
+   podniesiony do 90 s. Uwaga: **brak odpowiedzi nie znaczył, że import się
+   nie wykonał** — przepadał tylko wynik.
+
+Wniosek ogólny: przy `CREATE OR REPLACE FUNCTION` migracja niesie całe ciało
+funkcji, więc kolejna migracja pisana z pamięci potrafi cicho cofnąć
+wcześniejszą poprawkę. Tak właśnie limit czasu skasował skrót SHA-256
+i trzeba było scalić obie zmiany osobną migracją.
+
 ## Co jest już zrobione
 
 Migracjami wdrożono: rozszerzenia `pg_cron` i `pg_net`, zadanie

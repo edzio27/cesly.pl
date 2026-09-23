@@ -4,6 +4,7 @@ import { HomePage } from './components/HomePage';
 import { ListingDetailPage } from './components/ListingDetailPage';
 import { Footer } from './components/Footer';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { Analytics } from '@vercel/analytics/react';
 import { Listing } from './lib/supabase';
 import {
   CATEGORY_PATH_PREFIX,
@@ -26,6 +27,7 @@ const BookmarkletPage = lazy(() => import('./components/BookmarkletPage'));
 const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const RegulaminPage = lazy(() => import('./components/RegulaminPage'));
 const PolitykaPrywatnosciPage = lazy(() => import('./components/PolitykaPrywatnosciPage'));
+const LeadsPage = lazy(() => import('./components/LeadsPage'));
 
 function PageLoader() {
   return (
@@ -35,7 +37,7 @@ function PageLoader() {
   );
 }
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics' | 'regulamin' | 'polityka-prywatnosci';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics' | 'regulamin' | 'polityka-prywatnosci' | 'leady';
 
 /** Ścieżki bez parametrów — jedna tablica zamiast dwóch drabinek `else if`. */
 const STATIC_ROUTES: Record<string, Page> = {
@@ -45,6 +47,7 @@ const STATIC_ROUTES: Record<string, Page> = {
   '/bulk-import': 'bulk-import',
   '/facebook-import': 'bookmarklet',
   '/analytics': 'analytics',
+  '/leady': 'leady',
   '/regulamin': 'regulamin',
   '/polityka-prywatnosci': 'polityka-prywatnosci',
 };
@@ -202,6 +205,8 @@ function App() {
 
         {currentPage === 'analytics' && <AnalyticsPage />}
 
+        {currentPage === 'leady' && <LeadsPage />}
+
         {currentPage === 'reset-password' && <ResetPasswordPage />}
 
         {currentPage === 'regulamin' && <RegulaminPage />}
@@ -211,6 +216,11 @@ function App() {
 
       <Footer onNavigate={handleNavigate} onNavigateCategory={handleNavigateCategory} />
       <CookieConsentBanner />
+      {/* Pakiet był w package.json od dawna, ale nigdzie nie renderowany —
+          czyli nie zbierał nic. Vercel Web Analytics nie używa cookies ani
+          identyfikatorów zapisywanych na urządzeniu, więc działa niezależnie
+          od banera; własne liczniki w `analytics.ts` nadal wymagają zgody. */}
+      <Analytics />
     </div>
   );
 }

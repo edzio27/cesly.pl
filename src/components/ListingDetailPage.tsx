@@ -24,6 +24,7 @@ import { trackPageView, trackListingClick } from '../utils/analytics';
 import { calculateDealScore, DEAL_SCORE_BADGE_THRESHOLD, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
 import { formatPLN, listingAge, listingCosts } from '../utils/listingMetrics';
 import { formatInstallments } from '../data/listingText';
+import { LeadForm } from './LeadForm';
 
 const FALLBACK_IMAGE =
   'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -861,6 +862,12 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
             )}
           </aside>
         </div>
+
+        {/* Najwyższa intencja w całym serwisie jest właśnie tutaj: ktoś ogląda
+            konkretną cesję i zastanawia się, czy ją udźwignie. */}
+        <section className="mt-12 max-w-2xl">
+          <LeadForm listingId={listing.id} />
+        </section>
 
         {suggestedListings.length > 0 && (
           <section className="mt-14">

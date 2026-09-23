@@ -12,6 +12,7 @@ import {
   MessageSquare,
   ChevronDown,
   Search,
+  Inbox,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
@@ -201,6 +202,10 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                           <BarChart3 size={17} className="text-ink-400" />
                           Statystyki
                         </button>
+                        <button onClick={() => handleNavigate('leady')} className={menuItem}>
+                          <Inbox size={17} className="text-ink-400" />
+                          Zapytania
+                        </button>
                       </>
                     )}
 
@@ -295,6 +300,13 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                     >
                       <BarChart3 size={20} className="text-ink-300" />
                       Statystyki
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('leady')}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-base font-medium text-ink-100 transition-colors hover:bg-white/5"
+                    >
+                      <Inbox size={20} className="text-ink-300" />
+                      Zapytania
                     </button>
                   </>
                 )}

@@ -77,3 +77,36 @@ select cron.unschedule('cesly-import-cesji');
 
 Albo trwale: usuń `CRON_SECRET` z sekretów — bez niego funkcja odrzuci
 każde wywołanie z harmonogramu.
+
+---
+
+# Formularz zapytań (leady)
+
+Formularz „Potrzebujesz pomocy przy cesji?" stoi pod każdym ogłoszeniem.
+Zgłoszenia lądują w tabeli `leads`, widocznej w menu administratora jako
+**Zapytania** (`/leady`).
+
+## Uruchomienie: wykonaj migrację
+
+Formularz nie zadziała, dopóki tabela nie istnieje — zgłoszenie kończy się
+wtedy komunikatem „Nie udało się wysłać". Wklej do SQL Editora treść pliku
+`supabase/migrations/20260923100000_add_leads.sql`.
+
+Czytać zgłoszenia mogą **wyłącznie adresy wymienione w funkcji
+`is_lead_admin()`** w tej migracji. To dane osobowe osób trzecich: gdyby
+polityka pozwalała na odczyt każdemu zalogowanemu, wystarczyłoby założyć konto,
+żeby pobrać kontakty wszystkich zgłaszających. Dopisując kolejnego
+administratora, zmień tę funkcję.
+
+## Zanim podłączysz partnera
+
+W `src/config/partners.ts` stoi `FINANCING_PARTNER = null` i to celowo.
+Treść zgody pod formularzem mówi wtedy wprost, że dane **nie są przekazywane
+innym podmiotom** — więc dopóki partnera nie ma, nic nie wolno nikomu wysyłać.
+
+Gdy partner się pojawi:
+
+1. wpisz jego nazwę w `partners.ts` — wejdzie automatycznie do treści zgody;
+2. dopisz go do polityki prywatności, do sekcji o odbiorcach danych;
+3. dopiero zgłoszenia zebrane **po** tej zmianie wolno mu przekazywać.
+   Zgody zebrane wcześniej dotyczyły kontaktu wyłącznie ze strony Cesly.

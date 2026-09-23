@@ -36,7 +36,9 @@ export default function PolitykaPrywatnosciPage() {
               <ul className="list-disc list-inside space-y-1 mt-2">
                 <li><strong>Dane konta:</strong> adres e-mail, opcjonalnie numer telefonu — podawane przy rejestracji i korzystaniu z konta.</li>
                 <li><strong>Dane w ogłoszeniach:</strong> treść ogłoszenia oraz dane kontaktowe podane dobrowolnie przez Użytkownika w celu umożliwienia kontaktu zainteresowanym osobom.</li>
-                <li><strong>Dane analityczne:</strong> zanonimizowany (zahaszowany) adres IP oraz identyfikator przeglądarki (user agent), zbierane w celu liczenia wyświetleń i kliknięć ogłoszeń — wyłącznie za zgodą wyrażoną w banerze cookies.</li>
+                <li><strong>Dane analityczne (za zgodą):</strong> zanonimizowany (zahaszowany) adres IP oraz identyfikator przeglądarki (user agent), zbierane w celu liczenia wyświetleń i kliknięć ogłoszeń — wyłącznie za zgodą wyrażoną w banerze cookies.</li>
+                <li><strong>Zbiorcze statystyki odwiedzin:</strong> liczba wyświetleń poszczególnych podstron, kraj i rodzaj urządzenia — zbierane przez Vercel Web Analytics. Narzędzie to nie zapisuje plików cookies ani żadnych identyfikatorów na urządzeniu Użytkownika i nie pozwala na śledzenie go między stronami ani na jego identyfikację.</li>
+                <li><strong>Dane z formularza kontaktu w sprawie finansowania:</strong> imię, numer telefonu lub adres e-mail oraz treść zapytania — podawane dobrowolnie przez Użytkownika, gdy sam zdecyduje się poprosić o kontakt.</li>
               </ul>
             </section>
 
@@ -45,6 +47,8 @@ export default function PolitykaPrywatnosciPage() {
               <ul className="list-disc list-inside space-y-1 mt-2">
                 <li>Świadczenie usług Serwisu (założenie i obsługa konta, publikacja ogłoszeń) — art. 6 ust. 1 lit. b RODO (wykonanie umowy).</li>
                 <li>Statystyki oglądalności ogłoszeń — art. 6 ust. 1 lit. a RODO (zgoda wyrażona w banerze cookies).</li>
+                <li>Zbiorcze, bezciasteczkowe statystyki odwiedzin Serwisu — art. 6 ust. 1 lit. f RODO (prawnie uzasadniony interes administratora polegający na badaniu sposobu korzystania z Serwisu). Dane te nie pozwalają na identyfikację Użytkownika.</li>
+                <li>Obsługa zapytania o kontakt w sprawie finansowania lub cesji — art. 6 ust. 1 lit. a RODO (zgoda wyrażona przy wysyłce formularza). Zgodę można wycofać w każdej chwili, pisząc na adres kontaktowy.</li>
                 <li>Dochodzenie i obrona przed roszczeniami — art. 6 ust. 1 lit. f RODO (prawnie uzasadniony interes administratora).</li>
               </ul>
             </section>
@@ -91,6 +95,12 @@ export default function PolitykaPrywatnosciPage() {
                 logowania) oraz — wyłącznie po wyrażeniu zgody w banerze wyświetlanym przy pierwszej wizycie —
                 cookies analityczne służące liczeniu wyświetleń i kliknięć ogłoszeń. Zgodę można w każdej chwili
                 wycofać, czyszcząc dane przeglądarki dla tej strony.
+              </p>
+              <p className="mt-2">
+                Niezależnie od powyższego Serwis korzysta z Vercel Web Analytics — narzędzia, które zlicza
+                odwiedziny bez użycia plików cookies i bez zapisywania jakichkolwiek danych na urządzeniu
+                Użytkownika. Z tego powodu jego działanie nie wymaga zgody, a zebrane statystyki mają charakter
+                wyłącznie zbiorczy.
               </p>
             </section>
 

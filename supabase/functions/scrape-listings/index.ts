@@ -162,19 +162,27 @@ Deno.serve(async (req: Request) => {
     // to także obecności na tej liście.
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    if (!token) {
+    if (!token && !req.headers.get('x-cron-secret')) {
       return new Response(JSON.stringify({ error: 'Brak nagłówka autoryzacji' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Ścieżka dla harmonogramu: pg_cron nie ma sesji użytkownika, więc
+    // uwierzytelnia się wspólnym sekretem z nagłówka. Sekret jest osobny od
+    // klucza serwisowego celowo — gdyby wyciekł, daje wyłącznie prawo
+    // uruchomienia importu, a nie dostęp do bazy.
+    const cronSecret = Deno.env.get('CRON_SECRET');
+    const isCronCall =
+      !!cronSecret && req.headers.get('x-cron-secret') === cronSecret;
+
     const authClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
     );
-    const { data: caller } = await authClient.auth.getUser(token);
-    if (!caller?.user) {
+    const { data: caller } = isCronCall ? { data: null } : await authClient.auth.getUser(token);
+    if (!isCronCall && !caller?.user) {
       return new Response(
         JSON.stringify({ error: 'Wymagane zalogowanie — sam klucz anon nie wystarcza' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -185,7 +193,11 @@ Deno.serve(async (req: Request) => {
       .split(',')
       .map((entry) => entry.trim().toLowerCase())
       .filter(Boolean);
-    if (adminEmails.length > 0 && !adminEmails.includes((caller.user.email ?? '').toLowerCase())) {
+    if (
+      !isCronCall &&
+      adminEmails.length > 0 &&
+      !adminEmails.includes((caller?.user?.email ?? '').toLowerCase())
+    ) {
       return new Response(JSON.stringify({ error: 'Brak uprawnień' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

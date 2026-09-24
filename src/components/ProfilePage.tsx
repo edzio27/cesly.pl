@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ListingCard } from './ListingCard';
 import { MessagesPanel } from './MessagesPanel';
 import { SavedSearchesPanel } from './SavedSearchesPanel';
+import { ClaimLinkBox } from './ClaimLinkBox';
 
 type ProfilePageProps = {
   onViewListing: (id: string) => void;
@@ -12,6 +13,51 @@ type ProfilePageProps = {
 };
 
 type Tab = 'my-listings' | 'drafts' | 'favorites' | 'recent' | 'messages' | 'saved-searches';
+
+// Token nie jest czytelny przez API (patrz migracja listing_claims), więc
+// pobieramy go dopiero na kliknięcie, przez funkcję dostępną dla właściciela.
+function ClaimLinkForListing({ listingId }: { listingId: string }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchToken = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: rpcError } = await supabase.rpc('create_claim_link', { p_listing_id: listingId });
+      if (rpcError) throw rpcError;
+      setToken(data as string);
+    } catch (err) {
+      console.error('Nie udało się pobrać linku do przejęcia:', err);
+      setError('Nie udało się pobrać linku.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (token) {
+    return (
+      <div className="mt-2">
+        <ClaimLinkBox token={token} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={fetchToken}
+        disabled={loading}
+        className="btn-ghost w-full py-2 text-xs disabled:opacity-60"
+      >
+        {loading ? 'Pobieram…' : 'Pokaż link do przejęcia'}
+      </button>
+      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+    </div>
+  );
+}
 
 export function ProfilePage({ onViewListing, onApplySavedSearch }: ProfilePageProps) {
   const { user } = useAuth();
@@ -223,20 +269,24 @@ export function ProfilePage({ onViewListing, onApplySavedSearch }: ProfilePagePr
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {getCurrentListings().map((listing) => (
-                <div key={listing.id} className="relative">
-                  <ListingCard listing={listing} onView={() => onViewListing(listing.id)} />
-                  {(activeTab === 'my-listings' || activeTab === 'drafts') && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteListing(listing.id);
-                      }}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition shadow-lg"
-                      title="Usuń ogłoszenie"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
+                <div key={listing.id}>
+                  <div className="relative">
+                    <ListingCard listing={listing} onView={() => onViewListing(listing.id)} />
+                    {(activeTab === 'my-listings' || activeTab === 'drafts') && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteListing(listing.id);
+                        }}
+                        className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition shadow-lg"
+                        title="Usuń ogłoszenie"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                  {(activeTab === 'my-listings' || activeTab === 'drafts') &&
+                    listing.origin === 'imported' && <ClaimLinkForListing listingId={listing.id} />}
                 </div>
               ))}
             </div>

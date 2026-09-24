@@ -28,6 +28,7 @@ const AnalyticsPage = lazy(() => import('./components/AnalyticsPage').then(m => 
 const RegulaminPage = lazy(() => import('./components/RegulaminPage'));
 const PolitykaPrywatnosciPage = lazy(() => import('./components/PolitykaPrywatnosciPage'));
 const LeadsPage = lazy(() => import('./components/LeadsPage'));
+const ClaimListingPage = lazy(() => import('./components/ClaimListingPage'));
 
 function PageLoader() {
   return (
@@ -37,7 +38,7 @@ function PageLoader() {
   );
 }
 
-type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics' | 'regulamin' | 'polityka-prywatnosci' | 'leady';
+type Page = 'home' | 'listing-detail' | 'add-listing' | 'profile' | 'admin-scraping' | 'reset-password' | 'bulk-import' | 'bookmarklet' | 'analytics' | 'regulamin' | 'polityka-prywatnosci' | 'leady' | 'claim';
 
 /** Ścieżki bez parametrów — jedna tablica zamiast dwóch drabinek `else if`. */
 const STATIC_ROUTES: Record<string, Page> = {
@@ -59,6 +60,13 @@ const PAGE_PATHS: Partial<Record<Page, string>> = Object.fromEntries(
 // Legacy/CDN-cached crawler redirects may still point at the hash form
 // (#/listing/{id}) instead of the real path. Accept both so no visitor
 // coming from an old cached link ends up stranded on the homepage.
+/** Link do przejęcia ogłoszenia: /przejmij/<token>. */
+function parseClaimToken(path: string): string | null {
+  if (!path.startsWith('/przejmij/')) return null;
+  const token = path.split('/przejmij/')[1]?.split('?')[0];
+  return token || null;
+}
+
 function parseListingId(path: string, hash: string): string | null {
   if (path.startsWith('/listing/')) {
     const id = path.split('/listing/')[1]?.split('?')[0];
@@ -79,16 +87,21 @@ function App() {
   // Strona kategorii (/cesja-leasingu/<slug>) to ta sama HomePage z nałożonym
   // filtrem i własnym H1 — dzięki temu crawler i użytkownik widzą tę samą listę.
   const [category, setCategory] = useState<SeoCategory | null>(null);
+  const [claimToken, setClaimToken] = useState<string | null>(null);
 
   const applyRoute = useCallback((path: string, hash: string) => {
     const listingId = parseListingId(path, hash);
     const nextCategory = findCategory(parseCategorySlug(path));
+    const token = parseClaimToken(path);
 
     setSelectedListingId(listingId);
     setCategory(nextCategory);
+    setClaimToken(token);
 
     if (path === '/reset-password' || (hash && hash.includes('type=recovery'))) {
       setCurrentPage('reset-password');
+    } else if (token) {
+      setCurrentPage('claim');
     } else if (listingId) {
       setCurrentPage('listing-detail');
     } else {
@@ -115,6 +128,9 @@ function App() {
     }
     if (page !== 'add-listing') {
       setEditingListing(null);
+    }
+    if (page !== 'claim') {
+      setClaimToken(null);
     }
     window.scrollTo({ top: 0 });
   };
@@ -206,6 +222,14 @@ function App() {
         {currentPage === 'analytics' && <AnalyticsPage />}
 
         {currentPage === 'leady' && <LeadsPage />}
+
+        {currentPage === 'claim' && claimToken && (
+          <ClaimListingPage
+            token={claimToken}
+            onViewListing={handleViewListing}
+            onBack={() => handleNavigate('home')}
+          />
+        )}
 
         {currentPage === 'reset-password' && <ResetPasswordPage />}
 

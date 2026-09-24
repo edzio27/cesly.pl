@@ -14,6 +14,7 @@ import {
   Phone,
   Mail,
   MessageSquare,
+  ExternalLink,
   Maximize2,
   AlertTriangle,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import { trackPageView, trackListingClick } from '../utils/analytics';
 import { calculateDealScore, DEAL_SCORE_BADGE_THRESHOLD, DEAL_SCORE_EXPLANATION } from '../utils/dealScore';
 import { formatPLN, listingAge, listingCosts } from '../utils/listingMetrics';
 import { formatInstallments } from '../data/listingText';
+import { CONTACT_EMAIL } from '../config/social';
 import { LeadForm } from './LeadForm';
 
 const FALLBACK_IMAGE =
@@ -289,6 +291,10 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
             phone: data.custom_contact_phone || undefined,
             email: data.custom_contact_email || undefined
           });
+        } else if (data.origin === 'imported') {
+          // Ogłoszenie dodane za autora: pod fallbackiem siedziałby kontakt
+          // importera, a kupujący pisaliby do niego o cudze auto.
+          setSellerProfile(null);
         } else if (data.user_id) {
           const [profileResult, emailResult] = await Promise.all([
             supabase.from('profiles').select('phone').eq('id', data.user_id).maybeSingle(),
@@ -478,6 +484,9 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
   const deal = calculateDealScore(listing);
   const hasContact = !!(sellerProfile?.email || sellerProfile?.phone || sellerProfile?.name);
   const canMessage = !!user && listing.user_id !== user.id;
+  // Przy ogłoszeniu dodanym za autora wiadomość trafia do nas, nie do niego —
+  // nazywamy więc rzecz po imieniu zamiast udawać kontakt ze sprzedającym.
+  const isImported = listing.origin === 'imported';
 
   const specs: { label: string; value: string }[] = [
     { label: 'Marka', value: listing.brand },
@@ -569,6 +578,40 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
             </button>
           </div>
         </header>
+
+        {listing.origin === 'imported' && (
+          <div className="mt-5 rounded-2xl border border-ink-200 bg-white px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-ink-600">
+                <ExternalLink size={10} />
+                Oferta ze źródła zewnętrznego
+              </span>
+              {listing.source_url && (
+                <a
+                  href={listing.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="text-sm font-semibold text-accent-600 hover:underline"
+                >
+                  Zobacz oryginalne ogłoszenie i skontaktuj się ze sprzedającym
+                </a>
+              )}
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-ink-500">
+              Zebraliśmy tę cesję z ogłoszenia opublikowanego gdzie indziej i nie mamy przy niej danych
+              kontaktowych — najszybciej dogadasz się przez oryginalne ogłoszenie. Możesz też zostawić
+              kontakt poniżej: jeśli właściciel przejmie to ogłoszenie, przekażemy mu Twoje zgłoszenie.
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
+              To Twoje ogłoszenie? Napisz na{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-accent-600 hover:underline">
+                {CONTACT_EMAIL}
+              </a>
+              , a wyślemy Ci link, którym przejmiesz je na swoje konto — razem ze zgłoszeniami, które do
+              niego przyszły.
+            </p>
+          </div>
+        )}
 
         {age.isStale && (
           <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -788,7 +831,16 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
                 {canMessage && (
                   <div className={hasContact ? 'mt-4 border-t border-ink-100 pt-4' : ''}>
-                    <h3 className="text-sm font-bold text-ink-900">Napisz przez serwis</h3>
+                    <h3 className="text-sm font-bold text-ink-900">
+                      {isImported ? 'Zgłoś zainteresowanie' : 'Napisz przez serwis'}
+                    </h3>
+                    {isImported && (
+                      <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
+                        Właściciel nie przejął jeszcze tego ogłoszenia, więc zgłoszenie trafia do redakcji
+                        Cesly. Przekażemy je, gdy tylko odbierze ogłoszenie — a jeśli nie chcesz czekać,
+                        skontaktuj się przez oryginalne ogłoszenie powyżej.
+                      </p>
+                    )}
                     {messageSent ? (
                       <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                         Wiadomość wysłana. Odpowiedź znajdziesz w profilu, w zakładce „Wiadomości”.
@@ -799,7 +851,11 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
                           id="wiadomosc"
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
-                          placeholder="Dzień dobry, czy cesja jest jeszcze aktualna?"
+                          placeholder={
+                            isImported
+                              ? 'Jestem zainteresowany tą cesją — proszę o kontakt.'
+                              : 'Dzień dobry, czy cesja jest jeszcze aktualna?'
+                          }
                           rows={3}
                           className="field mt-2 resize-none"
                         />
@@ -819,7 +875,9 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
 
                 {!hasContact && !canMessage && (
                   <p className="text-sm text-ink-500">
-                    Zaloguj się, aby napisać do właściciela tego ogłoszenia.
+                    {isImported
+                      ? 'Zaloguj się, aby zgłosić zainteresowanie tą cesją.'
+                      : 'Zaloguj się, aby napisać do właściciela tego ogłoszenia.'}
                   </p>
                 )}
               </div>
@@ -910,9 +968,12 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
               Zadzwoń
             </a>
           ) : (
-            <a href="#wiadomosc" className="btn-accent shrink-0">
-              <MessageSquare size={17} />
-              Napisz
+            <a href={isImported && listing.source_url ? listing.source_url : '#wiadomosc'}
+               target={isImported && listing.source_url ? '_blank' : undefined}
+               rel={isImported && listing.source_url ? 'noopener noreferrer nofollow' : undefined}
+               className="btn-accent shrink-0">
+              {isImported && listing.source_url ? <ExternalLink size={17} /> : <MessageSquare size={17} />}
+              {isImported && listing.source_url ? 'Zobacz u źródła' : 'Napisz'}
             </a>
           )}
         </div>

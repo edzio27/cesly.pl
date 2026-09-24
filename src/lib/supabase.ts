@@ -33,6 +33,9 @@ export type Listing = {
   price?: number;
   fuel_type?: string;
   status?: string;
+  /** 'imported' = dodane przez nas za autora, czeka na przejęcie. */
+  origin?: 'owner' | 'imported';
+  source_url?: string | null;
 };
 
 export type Favorite = {

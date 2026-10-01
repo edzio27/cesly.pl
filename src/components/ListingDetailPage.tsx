@@ -410,7 +410,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
       <div className="min-h-screen bg-canvas-muted">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="skeleton h-4 w-64 rounded" />
-          <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <div className="space-y-4">
               <div className="skeleton aspect-[16/10] w-full rounded-3xl" />
               <div className="skeleton h-24 w-full rounded-2xl" />
@@ -631,8 +631,8 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
           </div>
         )}
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr] lg:items-start">
-          <div className="space-y-6">
+        <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
+          <div className="min-w-0 space-y-6">
             <div className="overflow-hidden rounded-3xl border border-ink-100 bg-white p-3 shadow-soft">
               <div
                 className="group relative aspect-[16/10] cursor-zoom-in overflow-hidden rounded-2xl bg-ink-100"
@@ -747,7 +747,7 @@ export function ListingDetailPage({ listingId, onBack, onEdit, onViewListing }: 
             </div>
           </div>
 
-          <aside className="space-y-4 lg:sticky lg:top-24">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
             <div className="overflow-hidden rounded-3xl border border-ink-100 bg-white shadow-card">
               <div className="bg-ink-950 px-6 py-5 text-white">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-300">Rata miesięczna</p>
